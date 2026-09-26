@@ -11,7 +11,7 @@
 | CardScripts wiki | `github.com/ProjectIgnis/CardScripts.wiki.git` | `9dfd784` (2026-02-22) | Tutorials (script anatomy, filters, archetypes, counters, custom-card setup) and API tables |
 | scrapi-book | `github.com/ProjectIgnis/scrapi-book` | default branch | Successor of the wiki; most pages are still TODO stubs |
 | ScriptChecker | `ProjectIgnis/ScriptChecker` latest release | – | The CI load checker, run locally by `loadcheck.py` |
-| PSCT guide | `yugioh-card.com/en/play/psct/` | **not accessible** (blocked by this environment's network policy) | Replaced by corpus verification; see below |
+| PSCT articles, Parts 2–7 | yugioh-card.com (Kevin Tewart, 2011–2012), read from saved copies supplied by the user; the site is blocked by this environment's network policy | 2011-05-23 to 2012-12-12 | Chapter 02: text structure, costs, target references, Special Summon wording, terminology, conjunctions |
 
 ## Reliability ranking
 
@@ -28,18 +28,23 @@ When sources disagree, trust them in this order:
 
 ## About the PSCT chapter
 
-The official PSCT pages could not be fetched from the analysis environment. Chapter 02 was
-written from established PSCT knowledge and then checked against the corpus: for each
-wording, the scripts of all official cards containing it were scanned for the construct
-the chapter prescribes, and the match rate is quoted. Two points are marked *verify*
-because the corpus cannot settle them by itself:
+Chapter 02 follows the PSCT article series (Parts 2–7). Part 1, the introduction, was not
+among the saved copies. For each wording, the scripts of all official cards containing it
+were then scanned for the construct the chapter prescribes, and the match rate is quoted.
+Part 7 settled the two points the first version marked *verify*:
 
-* whether "also" parts are simultaneous with the preceding part (the scripts treat them as
-  independent and unconditional, which is what matters for implementation);
-* the exact behaviour of plain "and" when one part cannot be performed (ruling-dependent).
+* "also": the two parts are **simultaneous** and **independent** (neither needs the other);
+* plain "and": the two parts are simultaneous and **both are required**; if either cannot
+  be done, nothing is done. Most older "and" texts have been reprinted as "and if you do".
 
-To enable direct access in future sessions, allow `www.yugioh-card.com` in the cloud
-environment's network settings.
+Where an official script behaves differently from the articles (for example "Adreus,
+Keeper of Armageddon" checking face-up for "it", or "Ignition Beast Volcannon" requiring
+both cards for "also"), chapter 02 names the difference and follows the articles.
+
+The articles date from 2011–2012, so their wording is older ("Graveyard", "-Type",
+"Xyz Material"). Their punctuation and conjunction rules are the ones still printed on
+cards. To let future sessions read the pages directly, allow `www.yugioh-card.com` in
+the cloud environment's network settings.
 
 ## Validation performed
 
@@ -50,6 +55,9 @@ environment's network settings.
 * The linter was run over all official (13,541), pre-release (125) and unofficial (5,528)
   scripts to tune false positives; remaining error-level findings on official scripts are
   genuine latent bugs (08 §5).
+* W042 (added with the PSCT update) reports nothing on the 359 official scripts whose text
+  says "Cannot be Normal Summoned/Set", and reports a copy whose database type lacks
+  `TYPE_SPSUMMON`.
 * `loadcheck.py run --full` passes on the repository including these additions. An earlier
   layout (`docs/card-scripting-workflow/`) made the checker fail to open `proc_workaround.lua`;
   the documentation was flattened into `docs/` for that reason.

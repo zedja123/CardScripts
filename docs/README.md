@@ -68,9 +68,10 @@ All of the above were confirmed by the user on 2026-09-26.
 
 * **BabelCDBZedja `master` is force-reset to upstream every hour** by its `Mirror Upstream`
   workflow (only `.github/workflows` is preserved). Do not keep custom databases there.
-* The PSCT page on yugioh-card.com is blocked in this cloud environment; chapter 02 was
-  verified against the card corpus instead. Allowing that host in the environment's network
-  settings would let future sessions consult it directly.
+* Chapter 02 follows Konami's PSCT articles (Parts 2–7), read from saved copies because
+  yugioh-card.com is blocked in this cloud environment, and every mapping is checked against
+  the official scripts. Allowing that host in the environment's network settings would let
+  future sessions read the pages directly.
 * The CI ScriptChecker can fail when the repository contains a non-hidden folder nested two
   levels deep with files in it; this documentation therefore lives flat in `docs/`, and any
   new folder (e.g. for custom cards) must stay one level deep.

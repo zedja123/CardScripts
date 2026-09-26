@@ -436,6 +436,13 @@ class Linter:
 			r.add("W", "W041", "text restricts Special Summons of this card per turn but no c:SetSPSummonOnce(id)", line=1)
 		if re.search(r"You can only control 1 " + qn, text) and "SetUniqueOnField" not in code:
 			r.add("W", "W041", "text says 'You can only control 1' but no c:SetUniqueOnField(1,0,id)", line=1)
+		k = self.consts
+		if re.search(r"Cannot be Normal Summoned(?:/| or )Set", text) and card.type & k["TYPE_MONSTER"]:
+			summon_only = (k["TYPE_SPSUMMON"] | k["TYPE_RITUAL"] | k["TYPE_FUSION"] | k["TYPE_SYNCHRO"]
+			               | k["TYPE_XYZ"] | k["TYPE_LINK"])
+			if not card.type & summon_only and "EnableUnsummonable" not in code:
+				r.add("W", "W042", "text says 'Cannot be Normal Summoned/Set' but the database type lacks "
+				      "TYPE_SPSUMMON (0x2000000); the core would allow a Normal Summon", line=1)
 		if re.search(r'except "' + re.escape(name) + '"', text) and not re.search(
 				r"s\.listed_names\s*=\s*\{[^}]*\bid\b", code):
 			r.add("I", "I050", "text says except its own name; house style adds id to s.listed_names", line=1)

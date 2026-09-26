@@ -48,7 +48,7 @@ them.
 | `ot` (scope) | Bits: 0x1 OCG, 0x2 TCG, 0x4 Anime, 0x8 Illegal, 0x10 Video Game, 0x20 Custom, 0x40 Speed, 0x100 Pre-release, 0x200 Rush, 0x400 Legend, 0x1000 Hidden | Decides which formats list the card; custom cards use 0x20 |
 | `alias` | Passcode | Within 10 of `id`: alternate artwork (same card, shares the script). Further away: the card's **name is treated as** the alias for game purposes (e.g. *A Legendary Ocean* → "Umi"); the card keeps its own script |
 | `setcode` | Up to four 16-bit archetype codes packed low to high (`0x0009_3008` = "Neos" + "Elemental HERO") | Use `SET_*` constants in scripts |
-| `type` | `TYPE_*` bits (`constant.lua`), e.g. Effect Monster 0x21, Tuner Effect 0x1021, Link Effect 0x4000021, Quick-Play Spell 0x10002, Continuous Trap 0x20004, Token 0x4011 | |
+| `type` | `TYPE_*` bits (`constant.lua`), e.g. Effect Monster 0x21, Tuner Effect 0x1021, Link Effect 0x4000021, Quick-Play Spell 0x10002, Continuous Trap 0x20004, Token 0x4011 | A Main Deck monster whose text says "Cannot be Normal Summoned/Set" needs `TYPE_SPSUMMON` (0x2000000), e.g. 0x2000021; the core uses this bit to refuse Normal Summons (02 §11, lint W042) |
 | `atk` / `def` | Integers; `-2` = "?" | Link Monsters store **link markers** in `def` |
 | `level` | Level/Rank/Link Rating in the low byte; Pendulum scales in bits 24–31 (left) and 16–23 (right) | `0x5050004` = Level 4, scales 5/5 |
 | `race` | `RACE_*` bits (64-bit) | |
