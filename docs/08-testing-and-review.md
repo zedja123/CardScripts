@@ -30,6 +30,7 @@ python3 .claude/skills/edopro-card-scripting/tools/lint.py --quiet pre-release/ 
 | W021 | warning | Deprecated or deleted function |
 | W030 | warning | `aux.Stringid(id,n)` but `str(n+1)` is empty in the database |
 | W041 | warning | Count limit inconsistent with the text ("each effect", "activate 1", "once per Duel", `SetSPSummonOnce`, `SetUniqueOnField`) |
+| W042 | warning | Text says "Cannot be Normal Summoned/Set" but the database `type` lacks `TYPE_SPSUMMON` (0x2000000), so the core would allow a Normal Summon |
 | W043/W044 | warning | Targets selected without `EFFECT_FLAG_CARD_TARGET` / without `chkc` handling |
 | W051 | warning | Metadata name that looks like a typo (`s.listes_names`) |
 | W080 | warning | `io`, `os`, `print`, ... (unavailable in the client) |
@@ -110,7 +111,10 @@ installed first (`expansions/` or a configured repository).
 - [ ] `chk==0` checks everything the resolution needs (cards exist, zones, can draw, ...).
 - [ ] Categories and `SetOperationInfo` / `SetPossibleOperationInfo` describe the effect.
 - [ ] Resolution re-checks relations (`IsRelateToEffect`) and face-up status where needed.
-- [ ] Connectives implemented correctly (and if you do / then / also).
+- [ ] Connectives follow 02 §6 (Part 7): "then" = success check + `BreakEffect`; "and if you do" = success check, no break; "also" = independent; plain "and" = check both parts are possible before doing either.
+- [ ] Target references follow 02 §10: "that target"/"targeted" re-checks the target filter; "it"/"they" only `IsRelateToEffect`; "both" requires every target.
+- [ ] Activation conditions (before the colon) are not repeated in the operation unless the text states a resolution requirement (02 §2).
+- [ ] Summon wording follows 02 §11 ("must first" vs "cannot be Special Summoned by other ways"); "Cannot be Normal Summoned/Set" has `TYPE_SPSUMMON` in the database.
 - [ ] Hints before every selection; `ConfirmCards` after searches; `HintSelection` for non-targeted field selections.
 - [ ] Lingering effects have the right reset and a client hint.
 - [ ] Metadata: `listed_names`, `listed_series`, `material_setcode`, counters.

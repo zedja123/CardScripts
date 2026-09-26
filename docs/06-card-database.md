@@ -48,7 +48,7 @@ them.
 | `ot` (scope) | Bits: 0x1 OCG, 0x2 TCG, 0x4 Anime, 0x8 Illegal, 0x10 Video Game, 0x20 Custom, 0x40 Speed, 0x100 Pre-release, 0x200 Rush, 0x400 Legend, 0x1000 Hidden | Decides which formats list the card; custom cards use 0x20 |
 | `alias` | Passcode | Within 10 of `id`: alternate artwork (same card, shares the script). Further away: the card's **name is treated as** the alias for game purposes (e.g. *A Legendary Ocean* → "Umi"); the card keeps its own script |
 | `setcode` | Up to four 16-bit archetype codes packed low to high (`0x0009_3008` = "Neos" + "Elemental HERO") | Use `SET_*` constants in scripts |
-| `type` | `TYPE_*` bits (`constant.lua`), e.g. Effect Monster 0x21, Tuner Effect 0x1021, Link Effect 0x4000021, Quick-Play Spell 0x10002, Continuous Trap 0x20004, Token 0x4011 | |
+| `type` | `TYPE_*` bits (`constant.lua`), e.g. Effect Monster 0x21, Tuner Effect 0x1021, Link Effect 0x4000021, Quick-Play Spell 0x10002, Continuous Trap 0x20004, Token 0x4011 | A Main Deck monster whose text says "Cannot be Normal Summoned/Set" needs `TYPE_SPSUMMON` (0x2000000), e.g. 0x2000021; the core uses this bit to refuse Normal Summons (02 §11, lint W042) |
 | `atk` / `def` | Integers; `-2` = "?" | Link Monsters store **link markers** in `def` |
 | `level` | Level/Rank/Link Rating in the low byte; Pendulum scales in bits 24–31 (left) and 16–23 (right) | `0x5050004` = Level 4, scales 5/5 |
 | `race` | `RACE_*` bits (64-bit) | |
@@ -106,7 +106,7 @@ would collide with the next card, so custom Tokens take numbers from the **end**
 |---|---|
 | Unscripted official card already in BabelCDB | None to create; only the strings may need completing |
 | New prerelease card | `prerelease-<set>.cdb` (upstream practice) |
-| Custom card | `ZedjaCustomCards/ZedjaCustomCards.cdb` (project decision); `cdb.py new --write` uses it by default for 27xxxxxxx passcodes |
+| Custom card | The database of its archetype, `ZedjaCustomCards/<Archetype>.cdb` (project decision: one database per archetype). `cdb.py new --write` picks it by default: the `.cdb` in `ZedjaCustomCards/` that holds the other cards of the same passcode block. The first card of a new archetype needs `--db ZedjaCustomCards/<Archetype>.cdb`, which creates the file |
 
 ## 6. Creating or updating an entry
 
@@ -138,7 +138,8 @@ would collide with the next card, so custom Tokens take numbers from the **end**
 ```bash
 python3 tools/cdb.py nextid 1                            # next free passcode of custom archetype 1
 python3 tools/cdb.py new card.json                       # dry run: prints the row and the target file
-python3 tools/cdb.py new card.json --write               # 27xxxxxxx -> ZedjaCustomCards/ZedjaCustomCards.cdb
+python3 tools/cdb.py new card.json --write               # 27xxxxxxx -> its archetype's ZedjaCustomCards/<Archetype>.cdb
+python3 tools/cdb.py new card.json --db ZedjaCustomCards/Milacresy.cdb --write   # first card of a new archetype
 python3 tools/cdb.py new card.json --db other.cdb --write   # any other database, explicitly
 python3 tools/cdb.py show 270000000                      # the custom database is always included
 ```

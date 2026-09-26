@@ -55,7 +55,7 @@ it should be committed or only reviewed.
 |---|---|
 | Credit line in new scripts | `--scripted by Zedja` (line 3 of the header) |
 | Folder for custom cards | `ZedjaCustomCards/` in CardScripts (flat, no subfolders) |
-| Database for custom cards | `ZedjaCustomCards/ZedjaCustomCards.cdb` (next to the scripts, so the hourly BabelCDBZedja reset cannot erase it) |
+| Databases for custom cards | One per archetype, named after it: `ZedjaCustomCards/<Archetype>.cdb` (next to the scripts, so the hourly BabelCDBZedja reset cannot erase them; changed from a single `ZedjaCustomCards.cdb` on 2026-09-26) |
 | Passcodes for custom cards | `270000000 + 100 × (archetype − 1) + n`: archetype 1 = `270000000`–`270000099`, archetype 2 = `270000100`–`270000199`, ... (`cdb.py nextid <archetype>`) |
 | Tokens of custom cards | From the end of the archetype's block downwards (`...99`, `...98`, ...), so card numbers stay contiguous |
 | Setcodes of custom archetypes | `0xE00 + (archetype − 1)`: archetype 1 = `0xe00`, archetype 2 = `0xe01`, ... (the `0xB00`–`0xF00` blocks are unused by every card in BabelCDB). Each script declares it as a file-local constant (`local SET_NAME=0xe00`); add `!setname 0xe00 <Name>` to `strings.conf` to show the name in the client |
@@ -68,9 +68,10 @@ All of the above were confirmed by the user on 2026-09-26.
 
 * **BabelCDBZedja `master` is force-reset to upstream every hour** by its `Mirror Upstream`
   workflow (only `.github/workflows` is preserved). Do not keep custom databases there.
-* The PSCT page on yugioh-card.com is blocked in this cloud environment; chapter 02 was
-  verified against the card corpus instead. Allowing that host in the environment's network
-  settings would let future sessions consult it directly.
+* Chapter 02 follows Konami's PSCT articles (Parts 2–7), read from saved copies because
+  yugioh-card.com is blocked in this cloud environment, and every mapping is checked against
+  the official scripts. Allowing that host in the environment's network settings would let
+  future sessions read the pages directly.
 * The CI ScriptChecker can fail when the repository contains a non-hidden folder nested two
   levels deep with files in it; this documentation therefore lives flat in `docs/`, and any
   new folder (e.g. for custom cards) must stay one level deep.

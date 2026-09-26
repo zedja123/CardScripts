@@ -38,9 +38,9 @@ host is blocked; `lint.py` still works with its static index.
    decisions below without asking again.
 2. **Card data.** Record stats and strings (`aux.Stringid(id,n)` = `str(n+1)`). For C take
    the passcode from `cdb.py nextid <archetype>` (`--token` for Tokens), write a JSON spec,
-   run `cdb.py new spec.json` (dry run) and then `--write` (defaults to
-   `ZedjaCustomCards/ZedjaCustomCards.cdb` for 27xxxxxxx passcodes). For B ask which database
-   file to use.
+   run `cdb.py new spec.json` (dry run) and then `--write` (27xxxxxxx passcodes default to
+   their archetype's `ZedjaCustomCards/<Archetype>.cdb`; the first card of a new archetype
+   needs `--db ZedjaCustomCards/<Archetype>.cdb`). For B ask which database file to use.
 3. **Effect table.** Parse the text with `docs/02-psct-to-lua.md`.
    One row per effect: verbatim text without the final period, kind + `SetType`, event/code,
    range, condition, count limit, cost, target, resolution (with connectives), categories.
@@ -72,8 +72,9 @@ host is blocked; `lint.py` still works with its static index.
 ## Project decisions (user, 2026-09-26)
 
 * Credit line: `--scripted by Zedja` as line 3 of every new script.
-* Custom cards: folder `ZedjaCustomCards/` (flat), database
-  `ZedjaCustomCards/ZedjaCustomCards.cdb`, scope Custom (`ot` 0x20).
+* Custom cards: folder `ZedjaCustomCards/` (flat), **one database per archetype** named
+  after it (`ZedjaCustomCards/Prismiant.cdb`, ...), scope Custom (`ot` 0x20). Legacy
+  standalone cards keep their own database (for example `AlbazTheFallen.cdb`).
 * Custom passcodes: `270000000 + 100*(archetype-1) + n` (archetype 1 = 270000000-270000099);
   Tokens from the end of the block. Use `cdb.py nextid`.
 * Custom archetype setcodes: `0xE00 + (archetype-1)` (archetype 1 = `0xe00`, 2 = `0xe01`),
@@ -95,9 +96,23 @@ host is blocked; `lint.py` still works with its static index.
 * Everything before `;` happens on activation (cost in `SetCost`, targets in `SetTarget`
   with `EFFECT_FLAG_CARD_TARGET` and an `if chkc then ... end` line); after `;` in
   `SetOperation`.
-* "and if you do" → nested success check, no `Duel.BreakEffect()`; "then" →
-  `Duel.BreakEffect()`; "then you can" → `SelectYesNo` + `BreakEffect`; "also" →
-  unconditional.
+* Conjunctions (PSCT Part 7, docs 02 §6): "then" → B only if A happened, after
+  `Duel.BreakEffect()`; "then you can" → also `SelectYesNo`; "and if you do" → B only if A
+  happened, no break; "also" → independent and simultaneous, no break; plain "and" → both
+  required: check both are possible before doing either. After "A, then B" the last thing
+  that happened is B, so "When ...: You can" triggers on A miss the timing.
+* Target references (docs 02 §10): "that target"/"the targeted" → `IsRelateToEffect` +
+  the target filter again; "it"/"they" → `IsRelateToEffect` only (relations survive flips
+  and control changes); "both" → do nothing unless every target still qualifies.
+* Conditions before the colon are checked on activation only; do not repeat them in the
+  operation unless the text adds a resolution requirement ("must remain face-up ... to
+  resolve"). Pay/discard/Tribute/destroy/banish before `;` is a cost; after `;` it is not.
+* Summon wording (docs 02 §11): "(from your hand)" in parentheses → `EFFECT_SPSUMMON_PROC`
+  (built-in, no Chain); "Must first be Special Summoned" → `EnableReviveLimit`; "cannot be
+  Special Summoned by other ways" → also `AddMustBeSpecialSummoned()`; "Cannot be Normal
+  Summoned/Set" → `TYPE_SPSUMMON` in the database type (lint W042).
+* "Spell/Trap Card is activated" → `re:IsHasType(EFFECT_TYPE_ACTIVATE)`; "Spell/Trap effect"
+  → effect of a face-up Spell/Trap; "Card or effect" → `re:IsSpellTrapEffect()`.
 * "Activate 1 of these effects;" → choose in the target function (`Duel.SelectEffect`), set
   the category per choice; "apply/choose ... " on resolution → choose in the operation.
 * SINGLE optional triggers are allowed in the Damage Step by the core: add

@@ -37,10 +37,10 @@ SCRAPIYARD_DIR = Path(os.environ.get("EDOPRO_SCRAPIYARD", WORKSPACE / "scrapiyar
 CACHE_DIR = Path(os.environ.get("EDOPRO_CACHE", Path.home() / ".cache" / "edopro-card-scripting"))
 
 # ---------------------------------------------------------------- project decisions (2026-09-26)
-# Custom cards: scripts and their database live together in one flat folder of CardScripts.
+# Custom cards: scripts and their databases live together in one flat folder of CardScripts,
+# one database per archetype, named after it (e.g. "Prismiant.cdb"; decision updated 2026-09-26).
 CUSTOM_FOLDER = "ZedjaCustomCards"
 CUSTOM_DIR = SCRIPTS_ROOT / CUSTOM_FOLDER
-CUSTOM_DB = CUSTOM_DIR / "ZedjaCustomCards.cdb"
 CREDIT_LINE = "--scripted by Zedja"
 # Passcodes: 270000000 + 100*(archetype-1) + card; archetype 1 = 270000000-270000099, 2 = ...100-...199
 CUSTOM_PASSCODE_BASE = 270000000
@@ -65,6 +65,24 @@ def custom_setcode(archetype: int) -> int:
 
 def is_custom_passcode(code: int) -> bool:
 	return CUSTOM_PASSCODE_BASE <= code <= CUSTOM_PASSCODE_END
+
+
+def custom_db_for(code: int, folder: Path = CUSTOM_DIR) -> Path | None:
+	"""The archetype database in `folder` for passcode `code`: the .cdb holding the most other
+	cards of the same 100-passcode block, or None when no card of that block exists yet."""
+	block = code // CUSTOM_BLOCK
+	best, best_n = None, 0
+	for db in sorted(Path(folder).glob("*.cdb")):
+		try:
+			con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+			n = con.execute("select count(*) from datas where id/? = ? and id != ?",
+			                (CUSTOM_BLOCK, block, code)).fetchone()[0]
+			con.close()
+		except sqlite3.Error:
+			continue
+		if n > best_n:
+			best, best_n = db, n
+	return best
 
 
 # ---------------------------------------------------------------- databases

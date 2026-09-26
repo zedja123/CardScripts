@@ -5,12 +5,15 @@ punctuation mark and connective has a defined rules meaning, and EDOPro scripts 
 those meanings directly. Reading the text precisely is therefore the first half of
 scripting a card.
 
-> **Source note.** The official PSCT pages on yugioh-card.com could not be fetched from
-> this environment (the host is blocked by the network policy). This chapter is built from
-> established PSCT knowledge and, above all, from the card corpus itself: every mapping
-> below was checked against the official scripts that implement the same wording (the
-> percentages are "scripts that use the construct / scripts whose text has the wording").
-> Rows marked *verify* should be confirmed against the official PSCT page or a ruling.
+> **Sources.** The grammar comes from Konami's PSCT article series (Kevin Tewart,
+> yugioh-card.com, Parts 2–7, 2011–2012; read from saved copies because this environment
+> cannot reach the site). §13 summarises the articles part by part. Every mapping was then
+> checked against the official scripts that implement the same wording (the percentages
+> are "scripts that use the construct / scripts whose text has the wording"). Where an
+> official script behaves differently from the articles, the articles give the rule and
+> the difference is noted. The articles use the wording of their time ("Graveyard",
+> "Warrior-Type", "Xyz Material"); current texts say "GY", "Warrior", "material", but the
+> punctuation and conjunction rules are the ones still printed on cards.
 
 ---
 
@@ -26,9 +29,15 @@ scripting a card.
    Spell, Ritual Spell, or Normal/Counter Trap, the text is the effect of **activating the
    card itself** ("Draw 2 cards." is scripted as an `EFFECT_TYPE_ACTIVATE` effect even
    without a colon or semicolon).
-4. Pendulum Monsters have two blocks: `[ Pendulum Effect ]` (works in the Pendulum Zone,
+4. On a monster, a sentence with a location in **parentheses** and no colon/semicolon
+   ("you can Special Summon this card (from your hand)") is a **built-in summon**: a
+   summoning procedure, not an effect (§11).
+5. On a Continuous Spell/Trap already face-up, a sentence with a colon or semicolon is an
+   activated effect of the card on the field (Part 4, "Fusion Gate"), scripted with
+   `SetRange(LOCATION_SZONE)`.
+6. Pendulum Monsters have two blocks: `[ Pendulum Effect ]` (works in the Pendulum Zone,
    `SetRange(LOCATION_PZONE)`) and `[ Monster Effect ]`.
-5. The "once per turn" sentence at the end applies to the effects it names (see §5).
+7. The "once per turn" sentence at the end applies to the effects it names (see §5).
 
 Record the result as an **effect table** before writing code (the workflow requires it):
 
@@ -54,6 +63,17 @@ Record the result as an **effect table** before writing code (the workflow requi
 
 The `SetTarget` function also carries the **activation legality check** (`chk==0`): the
 effect may only be activated if it could do what it says (e.g. a card to search exists).
+
+What the articles add (Parts 3 and 4):
+
+| Rule | Example | Script |
+|---|---|---|
+| A **condition** (before the colon) only has to be met **on activation**. If it stops being true before resolution, the effect still resolves. | "Magical Dimension": "If you control a face-up Spellcaster monster: Target 1 monster; ..." | Put it in `SetCondition` only. Do **not** repeat it in `SetOperation`. |
+| A requirement that must still hold **on resolution** is written separately. | "Zombie Master": "This card must remain face-up on the field to activate and to resolve this effect." | Check it in the operation too (`c:IsRelateToEffect(e) and c:IsFaceup()`). |
+| Paying, discarding, Tributing, destroying or banishing **before the semicolon** is a cost, paid on activation. | "Raigeki Break": "Discard 1 card to target 1 card on the field; destroy it." | `SetCost` |
+| "`<cost>`, **then target** ...;" pays the cost first and chooses targets afterwards, both on activation. | "Zombie Master": "You can send 1 Monster Card from your hand to the GY, then target 1 ...;" | `SetCost` + `SetTarget` |
+| The same actions **after the semicolon** are not costs; they happen on resolution. | "Black Garden": "...; destroy this card and all face-up Plant monsters, then Special Summon that target." | In `SetOperation` |
+| In a chain, all activation parts (before the semicolons) happen when each link is activated; the resolution parts happen afterwards, last link first. | Part 3's Trident Warrior / Raigeki Break / Gemini Spark chain | Engine behaviour (chapter 07 §3) |
 
 ---
 
@@ -134,14 +154,38 @@ Why these exact forms (verified in ygopro-core `libeffect.cpp` and `effect.cpp`)
 
 ## 6. Resolution connectives
 
-| Connective | Meaning | Script |
-|---|---|---|
-| "A, **and if you do**, B" | B only if A was performed; A and B are simultaneous | `if <A succeeded> then <B> end` with **no** `Duel.BreakEffect()` (`Duel.SpecialSummon(...)>0`, `Duel.Destroy(...)>0`, `tc:IsLocation(...)` after the move) |
-| "A, **then** B" | B only if A was performed; B happens **after** A (not simultaneous) | `if <A succeeded> then Duel.BreakEffect() <B> end` |
-| "A, **then you can** B" | As "then", and B is optional | `if <A succeeded> and <B possible> and Duel.SelectYesNo(tp,aux.Stringid(id,n)) then Duel.BreakEffect() <B> end` |
-| "A, **also** B" / "Also, B" | Independent: B applies even if A did not happen *(verify simultaneity against the official page)* | Perform B unconditionally; lingering restrictions ("also, for the rest of this turn ...") are registered regardless of A (only 14% of "also" scripts use `BreakEffect`) |
-| "A **and** B" | Both done together | Perform both, no `BreakEffect` |
-| "A **or** B" / "either ... or ..." | A choice (who chooses and when is stated by the text) | `Duel.SelectOption` / `Duel.SelectEffect` in the operation |
+Part 7 defines the four conjunctions by **timing** (are A and B simultaneous?) and
+**causation** (does B need A?):
+
+| Connective | Timing | Causation | Script | Official example |
+|---|---|---|---|---|
+| "A, **then** B" | B happens **after** A | A is required for B. If A cannot be done, stop. If B cannot be done, A still happens. | `if <A succeeded> then Duel.BreakEffect() <B> end` | "Heraldry Change": Special Summon, `BreakEffect`, then end the Battle Phase |
+| "A, **also** B" | Simultaneous | Neither needs the other; do as much as possible | Do A and B independently, no `BreakEffect`; lingering parts ("also, for the rest of this turn ...") are registered whether or not A happened (only 14% of "also" scripts use `BreakEffect`) | "Masked Ninja Ebisu": registers the direct-attack effect before returning cards, with no dependency |
+| "A, **and if you do**, B" | Simultaneous | A is required for B, not the reverse | `if <A succeeded> then <B> end`, **no** `Duel.BreakEffect()` (`Duel.SpecialSummon(...)>0`, `Duel.Destroy(...)>0`, `tc:IsLocation(...)` after the move) | "Memory of an Adversary": damage, and banish only if damage was taken |
+| "A **and** B" | Simultaneous | **Both** are required: if either cannot be done, do **nothing** | Check that A and B can both be done **before doing either**, then do both, no `BreakEffect` | "Number 53: Heart-eartH": returns before summoning if this card is no longer in the GY to be attached |
+| "A, **then you can** B" | As "then", and B is optional | As "then" | `if <A succeeded> and <B possible> and Duel.SelectYesNo(tp,aux.Stringid(id,n)) then Duel.BreakEffect() <B> end` | |
+| "A **or** B" / "either ... or ..." | A choice (who chooses and when is stated by the text) | | `Duel.SelectOption` / `Duel.SelectEffect` in the operation | |
+
+Why timing matters: after "A, then B", the **last thing that happened** is B. Optional
+"When ...: You can" triggers (no `EFFECT_FLAG_DELAY`) that watch for A's event therefore
+miss the timing. With "also", "and if you do" and "and", A's and B's events happen together,
+so nothing misses the timing. In the engine, `Duel.BreakEffect()` is what makes the parts
+sequential. Leave it out and the events are raised together.
+
+* **Plain "and" is rare on modern cards.** Part 7 notes that most old "and" texts were
+  reprinted as "and if you do" (for example "Gemini Spark": "destroy it and draw 1 card",
+  whose script draws only if the destruction happened). For new card text, write "and if you
+  do" unless all-or-nothing is intended.
+* **Several conjunctions in one effect** are applied link by link. "Ignition Beast
+  Volcannon": "destroy that target, **also** destroy this card, **then** if both monsters
+  were destroyed, inflict damage". Each destruction happens if possible, even if the other
+  cannot; the damage follows only if both happened. The official script is stricter: it
+  destroys nothing unless both cards are still there.
+* **"and" in a built-in summon** ("Quickdraw Synchron": "You can send 1 monster from your
+  hand to the GY **and** Special Summon this card (from your hand)"): sending and summoning
+  are simultaneous. Do the sending inside the `EFFECT_SPSUMMON_PROC` operation
+  (`REASON_COST`), so no separate event comes first; the sent card's "When" effects do not
+  miss the timing.
 | "**Activate** 1 of these effects;" + bullets | Choice made **on activation** | `Duel.SelectEffect` in `SetTarget`; store the choice (`e:SetLabel(op)` or `e:GetChainData().choice`); set the category per choice |
 | "**Apply** 1 of these effects" / "choose 1" in the resolution | Choice made **on resolution** | `Duel.SelectEffect` in `SetOperation` |
 | "... **except** "X"" | Exclusion in the filter | `not c:IsCode(<X>)`; when X is this card, `not c:IsCode(id)` and add `id` to `s.listed_names` |
@@ -209,8 +253,7 @@ If paying the cost frees a Monster Zone that the effect then uses, check zones w
 | "face-up" | `c:IsFaceup()` or `aux.FaceupFilter(f,...)`; always check it for monsters "you control" whose properties are inspected |
 | "(This card is always treated as a "X" card.)" | Database `setcode` only; no script |
 | "This card's name becomes "X" while ..." | `EFFECT_CHANGE_CODE` + `EFFECT_FLAG_SINGLE_RANGE` |
-| "Cannot be Normal Summoned/Set." | `c:EnableUnsummonable()` or `c:AddMustBeSpecialSummoned()`; plus `EFFECT_SPSUMMON_CONDITION` if a specific method is required |
-| "Must be Special Summoned with/by ..." (Extra Deck, Ritual) | `c:EnableReviveLimit()` + the procedure |
+| "Cannot be Normal Summoned/Set." / "Must (first) be Special Summoned ..." | See §11: the exact wording decides between `EnableReviveLimit`, `AddMustBeSpecialSummoned` and `EFFECT_SPSUMMON_CONDITION`, and the database type needs `TYPE_SPSUMMON` |
 | "You cannot Special Summon monsters, except X, the turn you activate this effect." | Cost-time lock: `Duel.AddCustomActivityCounter` + `EFFECT_CANNOT_SPECIAL_SUMMON` with `EFFECT_FLAG_OATH` (template 14) |
 | "... for the rest of this turn after this card resolves" | Register the restriction in the operation, `RESET_PHASE\|PHASE_END` (template 15) |
 
@@ -232,3 +275,97 @@ If paying the cost frees a Monster Zone that the effect then uses, check zones w
 Metadata: `s.listed_names={id}` because the text says `except "Half Slice of Nickeline"`.
 Strings: `str1`/`str2` hold the two effect texts (`aux.Stringid(id,0)` / `(id,1)`).
 The real script is `pre-release/c101402088.lua`.
+
+---
+
+## 10. Target references on resolution (Parts 4 and 6)
+
+The word the resolution uses for its targets decides what is checked again when it
+resolves:
+
+| Resolution wording | Meaning | Script | Official example |
+|---|---|---|---|
+| "that target", "the targeted ...", "those targets" | Every targeting requirement must still be met; a target that no longer qualifies is not affected | `tc:IsRelateToEffect(e)` **and** the target filter again | "Trap Hole" re-checks face-up and ATK ≥ 1000 |
+| "it", "them", "they" | Only that the card is still where it was targeted | `tc:IsRelateToEffect(e)`, plus what the action itself needs (face-up to change ATK or Level) | "Pain Painter": each remaining face-up target becomes Level 2, Zombie or not |
+| "both" (or "all") | Every target must still qualify; if one does not, nothing happens | `local g=Duel.GetTargetCards(e)` and return unless every target qualifies | "Blackwing - Hillen the Tengu-wind" returns if either card fails |
+| Several targets without "both" | Apply to the targets that are still valid | `Duel.GetTargetCards(e)` and loop | "Pain Painter" |
+| A value read "in the GY" ("equal to the ATK of the destroyed monster in the GY") | The card must still be there when the value is read | Check `tc:IsLocation(LOCATION_GRAVE)` before reading it | "Armory Arm" |
+
+Engine note (ygopro-core `card.cpp`, `card::reset`): a target keeps its relation to the
+chain link when it is flipped face-down or changes control. The relation is cleared only
+when the card moves: to the hand, Deck, GY or banishment, into material, or between the
+Monster and Spell/Trap Zones. So `IsRelateToEffect` alone gives the "it" behaviour, and
+the "that target" re-checks must be written out. Some official scripts are stricter than
+the article on "it" ("Adreus, Keeper of Armageddon" also checks `IsFaceup()`); for new
+scripts, follow the article.
+
+---
+
+## 11. Special Summon wording (Part 5)
+
+There are two groups:
+
+* **Effects that Special Summon**: trigger, Ignition, Quick and Flip effects, and
+  Spells/Traps. They start a Chain. Cards that "negate the Summon" cannot negate these
+  Summons; only the activation or the effect can be negated. Script: `Duel.SpecialSummon`
+  in an operation.
+* **Built-in Summons**: no colon or semicolon, and the location in parentheses; this group
+  also covers Synchro, Xyz, Link, Contact Fusion and Ritual Summons. They do not start a
+  Chain, and cards that "negate the Summon" can negate them. Script: a summoning procedure
+  (`EFFECT_SPSUMMON_PROC`, `Synchro.AddProcedure`, `Xyz.AddProcedure`, `Link.AddProcedure`,
+  `Fusion.AddContactProc`, ...).
+
+| Text | Meaning | Script | Database `type` | Official example |
+|---|---|---|---|---|
+| "If ..., you can Special Summon this card (from your hand)." | Built-in; the card can also be Normal Summoned and freely revived | `EFFECT_SPSUMMON_PROC` | Ordinary monster type | "Cyber Dragon" |
+| "Cannot be Normal Summoned/Set. Must first be Special Summoned (from your hand) by ..." | Built-in; once properly Summoned, other cards can revive it | `c:EnableReviveLimit()` + `EFFECT_SPSUMMON_PROC` | Add `TYPE_SPSUMMON` (0x2000000) | "Ghost Ship", "Dragon Queen of Tragic Endings" |
+| "Cannot be Normal Summoned/Set. Must be Special Summoned (from your hand) by ..., and cannot be Special Summoned by other ways." | Only its own procedure, ever | `c:EnableReviveLimit()` + `c:AddMustBeSpecialSummoned()` + `EFFECT_SPSUMMON_PROC` | `TYPE_SPSUMMON` | "Destiny HERO - Dogma" |
+| "... cannot be Special Summoned by other ways, except by its own effect." | Only the stated method and its own effect | `c:EnableReviveLimit()` + `EFFECT_SPSUMMON_CONDITION` (no value) + its own Summon with `nocheck=true` (`Duel.SpecialSummon(c,0,tp,tp,true,false,POS_FACEUP)`) | `TYPE_SPSUMMON` | "Vennominaga the Deity of Poisonous Snakes" |
+| "Must first be Special Summoned (from your Extra Deck) by returning ... (You do not use "Polymerization".)" | Contact Fusion | `c:EnableReviveLimit()` + `Fusion.AddContactProc` | Fusion type | "Elemental HERO Marine Neos" |
+
+* **"Cannot be Normal Summoned/Set"** is enforced by the database: the core refuses a
+  Normal Summon when `type` contains `TYPE_SPSUMMON` (ygopro-core `card::is_summonable_card`).
+  `c:EnableUnsummonable()` gives the same result from the script, but official cards use
+  the type flag. `lint.py` reports W042 when the text has the sentence and the type lacks
+  the flag.
+* **"Must first"**: if the built-in Summon is negated, the monster was never properly
+  Summoned (no `STATUS_PROC_COMPLETE`), so `EnableReviveLimit` stops it from being revived.
+  The same applies to Synchro, Xyz, Link and Contact Fusion Summons.
+* Every built-in Summon except Synchro and Xyz Summons states its location in parentheses.
+  That is how to recognise a procedure sentence.
+
+---
+
+## 12. Terminology (Parts 2 and 6)
+
+| Wording | Script |
+|---|---|
+| "banish" (formerly "remove from play") | `Duel.Remove(g,POS_FACEUP,REASON_EFFECT)`, `CATEGORY_REMOVE`; face-down only when the text says so |
+| "banished cards" | `LOCATION_REMOVED` (+ `IsFaceup()` when the card must be identified) |
+| "leaves the field" (formerly "is removed from the field") | `EVENT_LEAVE_FIELD` (after the move) / `EVENT_LEAVE_FIELD_P` (before). Part 2: these effects do not activate when the card goes to the Deck. The engine enforces this by default: a card's own triggers cannot activate from the Deck or the face-down Extra Deck unless a duel option allows it (ygopro-core `effect.cpp`, `is_activateable`). 17 of 194 official leave-the-field triggers also add `not c:IsLocation(LOCATION_DECK)` for that option |
+| "remove" | Only for counters ("Remove 1 Spell Counter"): `RemoveCounter` / `Cost.RemoveCounterFromSelf` |
+| "inflict piercing battle damage" | `EFFECT_PIERCE` (single, or field for "monsters you control": "Dragon's Rage") |
+| "cannot target ... for attacks" (formerly "select as an attack target") | `EFFECT_CANNOT_SELECT_BATTLE_TARGET` ("Marauding Captain") |
+| "HERO" (capitals) | The "HERO" archetype names; spell them exactly as printed |
+| "a Spell/Trap **Card** is activated" | Activation of the card itself: `re:IsHasType(EFFECT_TYPE_ACTIVATE)` |
+| "a Spell/Trap **effect**" | Effect of a Spell/Trap already on the field: `re:IsSpellTrapEffect() and not re:IsHasType(EFFECT_TYPE_ACTIVATE)` |
+| "a Spell/Trap Card or effect" | Either: `re:IsSpellTrapEffect()` |
+| "a Spell, Trap, Spell/Trap effect, or Effect Monster's effect" | Any activation; no type filter on `re` ("Stardust Dragon") |
+| "cannot activate Spell/Trap Cards" | Card activations only: `EFFECT_CANNOT_ACTIVATE` with value `re:IsHasType(EFFECT_TYPE_ACTIVATE)` ("Vylon Filament"); effects of face-up cards can still be activated |
+| "... (during the Chain)" / "immediately" | A continuous effect acting mid-Chain, with no Chain of its own: `EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS`, e.g. on `EVENT_CHAIN_SOLVED` ("Bountiful Artemis") |
+
+---
+
+## 13. The PSCT articles, part by part
+
+| Part | Title (date) | Rules used in this chapter |
+|---|---|---|
+| 2 | New Words & Phrases (2011-05-23) | banish; leaves the field (not to the Deck); piercing battle damage; "target for attacks"; "HERO" → §12 |
+| 3 | Conditions, Activations, and Effects (2011-06-01) | CONDITIONS : ACTIVATION ; RESOLUTION; a colon or semicolon means a Chain; monsters without them never start one; Spells/Traps always do; chain building → §1, §2 |
+| 4 | The Clues on Your Cards (2011-06-01) | costs on activation; conditions checked only on activation; "that target" vs "it"; "both"; "then target"; Continuous Spells/Traps with colons → §1, §2, §10 |
+| 5 | Special Summons (2011-07-27) | effects that Summon vs built-in Summons; parentheses; "must first"; negating Summons → §11 |
+| 6 | Finding Clues in TU6 & GENF (2011-08-08) | Spell/Trap Card vs effect; "and" in built-in Summons; references "in the GY"; "targeted" vs "they"; continuous effects "during the Chain" → §6, §10, §12 |
+| 7 | 2012 Update: Conjunction Functions (2012-12-12) | then / also / and if you do / and: timing and causation; several conjunctions in one effect → §6 |
+
+Part 1 (the introduction) was not among the saved copies; the later parts refer to it only
+as background.

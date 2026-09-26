@@ -24,8 +24,8 @@ on. Commands are run from the CardScripts root; `T=.claude/skills/edopro-card-sc
 
 Ask the user only for what cannot be derived: missing stats or text for B/C and the intended
 behaviour when the text is ambiguous. Everything else follows this guide and the project
-decisions in the README: custom cards go to `ZedjaCustomCards/` with their row in
-`ZedjaCustomCards/ZedjaCustomCards.cdb`, passcodes come from `cdb.py nextid <archetype>`,
+decisions in the README: custom cards go to `ZedjaCustomCards/` with their row in their
+archetype's database `ZedjaCustomCards/<Archetype>.cdb`, passcodes come from `cdb.py nextid <archetype>`,
 and every new script carries `--scripted by Zedja`. For a new custom archetype, confirm its
 number (and therefore its passcode block) with the user.
 
@@ -57,10 +57,15 @@ Apply [02 · PSCT to Lua](02-psct-to-lua.md):
 2. For each effect fill one row of the effect table: verbatim text (without the final
    period), kind and `SetType`, event/code, range, condition, count limit, cost, target,
    resolution steps with their connectives, categories.
-3. Mark anything the database handles instead of the script ("always treated as ...").
-4. Mark every ambiguity (rulings, unusual wording). For official cards, prefer the behaviour
+3. Mark anything the database handles instead of the script ("always treated as ...",
+   `TYPE_SPSUMMON` for "Cannot be Normal Summoned/Set").
+4. In the resolution column, name each conjunction (then / also / and if you do / and) and
+   each target reference (that target / it / both); they decide the success checks,
+   `BreakEffect` calls and resolution re-checks (02 §6, §10).
+5. Mark every ambiguity (rulings, unusual wording). For official cards, prefer the behaviour
    of existing scripts with the same wording; if none exists and the ruling is unclear, ask
-   the user and record the decision.
+   the user and record the decision. Where official scripts disagree with the PSCT articles,
+   02 names the difference; follow the articles for new scripts.
 
 **Exit criterion**: a complete effect table, with ambiguities either resolved or listed.
 

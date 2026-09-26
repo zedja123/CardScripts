@@ -18,7 +18,7 @@ Examples:
   cdb.py analogs --text 'If this card is sent to the GY: You can target 1 Spell in your GY; add it to your hand.'
   cdb.py archetype "Raise Moon"
   cdb.py nextid 1                       # first custom archetype: 270000000-270000099
-  cdb.py new mycard.json --write         # custom passcodes default to ZedjaCustomCards/ZedjaCustomCards.cdb
+  cdb.py new mycard.json --write         # custom passcodes default to their archetype's ZedjaCustomCards/<Archetype>.cdb
   cdb.py puzzle hand:101402082 deck:101402082 opp:szone:"Mirror Force" -o test.lua
 """
 from __future__ import annotations
@@ -347,13 +347,18 @@ def cmd_new(args):
 	custom = C.is_custom_passcode(datas[0])
 	if custom and not datas[1] & 0x20:
 		print("warning: custom passcode but the scope (ot) lacks Custom (0x20)")
-	target = Path(args.db) if args.db else (C.CUSTOM_DB if custom else None)
+	# custom cards: one database per archetype, found from the other cards of the passcode block
+	target = Path(args.db) if args.db else (C.custom_db_for(datas[0]) if custom else None)
+	if custom and target is None:
+		print(f"note: no database in {C.CUSTOM_DIR} holds this archetype yet (new archetype); "
+		      f"pass --db {C.CUSTOM_FOLDER}/<Archetype>.cdb to create it")
 	if not args.write:
 		where = f"--write (target {target})" if target else "--db PATH --write"
 		print(f"dry run: pass {where} to insert/replace the row")
 		return 0
 	if target is None:
-		sys.exit("--write needs --db PATH (only custom passcodes default to " + str(C.CUSTOM_DB) + ")")
+		sys.exit("--write needs --db PATH (custom passcodes default to their archetype's database "
+		         f"in {C.CUSTOM_DIR} once it exists)")
 	db = target
 	db.parent.mkdir(parents=True, exist_ok=True)
 	con = sqlite3.connect(db)

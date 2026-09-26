@@ -275,7 +275,7 @@ class Linter:
 		card = self.cards.get(cid, [None])[0] if cid else None
 		self.check_header(r, src, code, card)
 		if path.resolve().parent.name == C.CUSTOM_FOLDER:
-			self.check_custom(r, src, cid, card)
+			self.check_custom(r, src, cid, card, path.resolve().parent)
 		self.check_names(r, code)
 		self.check_s_members(r, code)
 		self.check_effects(r, code, card)
@@ -305,15 +305,23 @@ class Linter:
 			r.add("S", "S071", f"line 2 should be the database name: --{card.name}", line=2)
 
 	# -- project rules for custom cards (ZedjaCustomCards)
-	def check_custom(self, r, src, cid, card):
+	def check_custom(self, r, src, cid, card, folder):
 		lines = src.splitlines()
 		if cid is not None and not C.is_custom_passcode(cid):
 			r.add("W", "W060", f"custom card passcode {cid} is outside {C.CUSTOM_PASSCODE_BASE}-"
 			      f"{C.CUSTOM_PASSCODE_END}", line=1)
 		if len(lines) < 3 or lines[2].strip() != C.CREDIT_LINE:
 			r.add("S", "S072", f"line 3 should be the credit line `{C.CREDIT_LINE}`", line=3)
-		if card and card.db != C.CUSTOM_DB.name:
-			r.add("I", "I060", f"database entry found in {card.db}, expected {C.CUSTOM_DB.name}", line=1)
+		if card and cid is not None:
+			# one database per archetype, next to the scripts (project decision)
+			expected = C.custom_db_for(cid, folder)
+			if not (folder / card.db).is_file():
+				r.add("I", "I060", f"database entry found in {card.db}, which is not in the script's folder; "
+				      "custom cards keep their archetype's database next to the scripts", line=1)
+			elif expected and expected.name != card.db:
+				r.add("I", "I060", f"database entry found in {card.db}, but most cards of passcode block "
+				      f"{cid // C.CUSTOM_BLOCK * C.CUSTOM_BLOCK} are in {expected.name} (one database per archetype)",
+				      line=1)
 		if card and not card.ot & 0x20:
 			r.add("W", "W061", "custom card database entry lacks the Custom scope (ot 0x20)", line=1)
 
@@ -436,6 +444,13 @@ class Linter:
 			r.add("W", "W041", "text restricts Special Summons of this card per turn but no c:SetSPSummonOnce(id)", line=1)
 		if re.search(r"You can only control 1 " + qn, text) and "SetUniqueOnField" not in code:
 			r.add("W", "W041", "text says 'You can only control 1' but no c:SetUniqueOnField(1,0,id)", line=1)
+		k = self.consts
+		if re.search(r"Cannot be Normal Summoned(?:/| or )Set", text) and card.type & k["TYPE_MONSTER"]:
+			summon_only = (k["TYPE_SPSUMMON"] | k["TYPE_RITUAL"] | k["TYPE_FUSION"] | k["TYPE_SYNCHRO"]
+			               | k["TYPE_XYZ"] | k["TYPE_LINK"])
+			if not card.type & summon_only and "EnableUnsummonable" not in code:
+				r.add("W", "W042", "text says 'Cannot be Normal Summoned/Set' but the database type lacks "
+				      "TYPE_SPSUMMON (0x2000000); the core would allow a Normal Summon", line=1)
 		if re.search(r'except "' + re.escape(name) + '"', text) and not re.search(
 				r"s\.listed_names\s*=\s*\{[^}]*\bid\b", code):
 			r.add("I", "I050", "text says except its own name; house style adds id to s.listed_names", line=1)

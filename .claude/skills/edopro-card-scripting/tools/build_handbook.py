@@ -130,7 +130,7 @@ def build(branch: str) -> str:
 		nav.append(f'<li class="nav-ch" data-ch="{cid}"><a href="#{cid}" class="nav-ch-link">{num}'
 		           f'<span>{html.escape(title)}</span></a><ol class="nav-sub">{sub_html}</ol></li>')
 	return PAGE.replace("%%NAV%%", "".join(nav)).replace("%%SECTIONS%%", "\n".join(sections)) \
-		.replace("%%HLJS%%", HLJS).replace("%%PR%%", "https://github.com/zedja123/CardScripts/pull/1")
+		.replace("%%HLJS%%", HLJS).replace("%%PR%%", "https://github.com/zedja123/CardScripts/tree/master/docs")
 
 
 PAGE = r"""<title>EDOPro Scripting Handbook</title>
@@ -278,7 +278,7 @@ mark{background:var(--mark);color:inherit;border-radius:2px}
     <ol class="nav" id="nav">%%NAV%%</ol>
     <p class="nav-empty" id="navEmpty" hidden>No heading matches.</p>
     <div class="side-foot">
-      <a href="%%PR%%" target="_blank" rel="noopener">Pull request #1 on GitHub</a>
+      <a href="%%PR%%" target="_blank" rel="noopener">docs/ on GitHub</a>
       <span>Source: <code>docs/</code> in CardScripts. The repository is authoritative if this page and the files differ.</span>
     </div>
   </nav>
