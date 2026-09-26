@@ -137,5 +137,8 @@ host is blocked; `lint.py` still works with its static index.
 ## Maintenance
 
 * After changing `templates/`, run `python3 $T/build_cookbook.py --check`.
+* After changing `docs/`, rebuild the web page with `python3 $T/build_handbook.py -o <file>`
+  (needs `pip install markdown`) and republish it to
+  https://claude.ai/artifact/TUiK7oewrxPpppKJGih15C (pass it as `url` from a new session).
 * After updating ygopro-core, run `loadcheck.py setup --force` and `loadcheck.py symbols`.
 * When the house style changes upstream, update docs 03 and the rules above together.

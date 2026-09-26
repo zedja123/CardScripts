@@ -58,6 +58,16 @@ Requires `g++` and `git`/`curl` access to GitHub for the first setup. The Lua so
 from `ygopro-core/lua/src` when the submodule is initialised, otherwise they are fetched at
 the pinned commit.
 
+## build_handbook.py
+
+```bash
+pip install markdown                       # only dependency outside the standard library
+build_handbook.py -o handbook.html         # all docs/*.md as one self-contained web page
+```
+
+The published page is https://claude.ai/artifact/TUiK7oewrxPpppKJGih15C (private to its
+owner); republish it after regenerating when the docs change.
+
 ## build_cookbook.py
 
 ```bash
