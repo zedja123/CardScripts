@@ -1,0 +1,126 @@
+---
+name: edopro-card-scripting
+description: Script Yu-Gi-Oh! cards for EDOPro (Project Ignis) in Lua. Use when the user sends a card (passcode, name or card text) to script, asks to fix or review a card script, or needs a card database (CDB) entry. Covers PSCT parsing, CardScripts house style, BabelCDB entries and verification in the real ygopro-core.
+---
+
+# EDOPro card scripting
+
+Human-readable version and full detail: `docs/` (chapters 01–09).
+This file is the operational checklist. Paths are relative to the CardScripts root; `T` is
+`.claude/skills/edopro-card-scripting/tools`.
+
+## Workspace
+
+| Repo | Role |
+|---|---|
+| `CardScripts/` | Scripts (`official/`, `pre-release/`, `unofficial/`, ...), root libraries (`constant.lua`, `utility.lua`, `proc_*.lua`, `cards_specific_functions.lua`, `chain.lua`), `MODERNIZING.md` |
+| `BabelCDBZedja/` (any sibling `BabelCDB*`) | Card databases; its `master` is force-reset to upstream hourly, never store custom data there |
+| `ygopro-core/` | Engine sources; authority for behaviour and function parameters |
+| `scrapiyard/` | YAML API docs (`api/functions/<NS>/<Name>.yml`); ~30% still under construction |
+
+## Session setup (once per session, ~30 s)
+
+```bash
+python3 $T/loadcheck.py setup     # builds libocgcore.so from ygopro-core, fetches ScriptChecker
+python3 $T/loadcheck.py symbols   # runtime API dump used by lint.py
+```
+
+If a tool fails because of the network, read the environment docs and tell the user which
+host is blocked; `lint.py` still works with its static index.
+
+## Procedure (do every step; do not skip verification)
+
+1. **Intake.** Identify each card: `python3 $T/cdb.py show <passcode|name>`. Classify:
+   A = in the database (script missing or to fix), B = official but not in the database,
+   C = custom. For B/C collect name, types, attribute, race, level/rank/link (+markers),
+   scales, ATK/DEF, archetypes, exact text. Ask the user only for what cannot be derived,
+   and for the first-time decisions listed in the docs README (credit line, custom folder,
+   custom database, passcode block). Reuse answers already given.
+2. **Card data.** Record stats and strings (`aux.Stringid(id,n)` = `str(n+1)`). For B/C
+   write a JSON spec and run `cdb.py new spec.json` (dry run), then `--db <agreed file>
+   --write` only with the user's agreement on the file.
+3. **Effect table.** Parse the text with `docs/02-psct-to-lua.md`.
+   One row per effect: verbatim text without the final period, kind + `SetType`, event/code,
+   range, condition, count limit, cost, target, resolution (with connectives), categories.
+   List ambiguities; prefer the behaviour of existing scripts with identical wording; ask
+   when a ruling is genuinely unclear.
+4. **Analogs.** `python3 $T/cdb.py analogs <passcode>` (or `--text "..."`); read the best
+   1–3 scripts per effect, preferring `pre-release/` and 2024–2026 authors. Compare with
+   `docs/04-cookbook.md`. Check `Cost.*`, `aux.*` and procedure
+   helpers before hand-writing code. Confirm any unfamiliar name with
+   `grep -P '^Name\t' ~/.cache/edopro-card-scripting/symbols.tsv` or the sources.
+5. **Write.** Folder/name per chapter 03 §1. Header (`--<JP name or "JP name">`,
+   `--<exact DB name>`, optional credit), `local s,id=GetID()`,
+   `function s.initial_effect(c)`; setup and procedures first; one block per effect in text
+   order with the verbatim comment and `SetDescription(aux.Stringid(id,n))`; metadata;
+   helpers. Complete the database strings.
+6. **Verify.**
+   ```bash
+   python3 $T/lint.py <script>            # zero E and W, or justify each remaining one
+   python3 $T/loadcheck.py run <script>   # must print OK
+   python3 $T/cdb.py puzzle hand:<id> ... -o <user-visible dir>/<name>-test.lua
+   ```
+   Then re-read the script against the effect table and the checklist in chapter 08 §4.
+7. **Deliver.** Commit on the working branch (upstream-style message, e.g.
+   `Add "Card Name"`), push, open/update the PR if working through GitHub. Report: effect
+   table, decisions/assumptions, lint + load-test results, the test board, scenarios to run
+   in the client, open questions.
+
+## Mapping rules that are easy to get wrong
+
+* "If ...: You can" → `EFFECT_FLAG_DELAY`; "When ...: You can" → no DELAY; mandatory
+  triggers → no DELAY.
+* "this effect of X once per turn" → `SetCountLimit(1,id)`; "each effect" →
+  `{id,0}`, `{id,1}`...; "1 X effect per turn, and only once that turn" → same `id` on all;
+  "activate 1 X per turn" → `SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)`; "Special Summon X
+  once per turn this way" → OATH limit on the `EFFECT_SPSUMMON_PROC`; "Special Summon X once
+  per turn." → `c:SetSPSummonOnce(id)`; "control 1 X" → `c:SetUniqueOnField(1,0,id)`.
+  `SetCountLimit(1,id)` and `{id,0}` are the same counter.
+* Everything before `;` happens on activation (cost in `SetCost`, targets in `SetTarget`
+  with `EFFECT_FLAG_CARD_TARGET` and an `if chkc then ... end` line); after `;` in
+  `SetOperation`.
+* "and if you do" → nested success check, no `Duel.BreakEffect()`; "then" →
+  `Duel.BreakEffect()`; "then you can" → `SelectYesNo` + `BreakEffect`; "also" →
+  unconditional.
+* "Activate 1 of these effects;" → choose in the target function (`Duel.SelectEffect`), set
+  the category per choice; "apply/choose ... " on resolution → choose in the operation.
+* SINGLE optional triggers are allowed in the Damage Step by the core: add
+  `not Duel.IsDamageStep()` when the text excludes it; never add `EFFECT_FLAG_DAMAGE_STEP`
+  to SINGLE triggers without a ruling. Quick Effects/FIELD triggers need the flag to be
+  used in the Damage Step (+ `aux.StatChangeDamageStepCondition` for stat changes).
+* `SetOperation(nil)` and `SetValue(nil)` are accepted silently: a misspelled function
+  name there is only caught by `lint.py` (E012).
+* `chk==0` must check everything the resolution needs and have no side effects; data from
+  activation reaches the resolution only via targets, `SetTargetParam/Player`, labels or
+  `e:GetChainData()`.
+* Resolution re-checks `IsRelateToEffect(e)` for targets and for this card; no `if tc and`
+  except in mandatory effects.
+* Operators: `+` for `EFFECT_TYPE_*`, `CATEGORY_*`, `EFFECT_FLAG_*`; `|` for locations,
+  resets, reasons, races, attributes, types, timings, positions.
+* Constants: `SET_*`, `CARD_*`, `COUNTER_*`; declare a file-local constant when missing.
+* Metadata: `s.listed_names` (+`id` when the text says except its own name),
+  `s.listed_series`, `s.material_setcode`, counters.
+* Every activated effect has a description, except the bare activation of
+  Continuous/Field/Equip/Pendulum Spells and Continuous Traps.
+* Never use `io`, `os`, `require`, `dofile`, `loadfile`; never define globals; never edit
+  root libraries or the core as part of a card without the user's agreement.
+* Never create non-hidden folders nested two levels deep in CardScripts: the CI
+  ScriptChecker can then fail to load the root libraries (`loadcheck.py run` warns).
+
+## Reference map
+
+| Question | Read |
+|---|---|
+| Which construct does this wording need? | docs 02 |
+| House style, strings, metadata | docs 03 |
+| A full pattern to start from | docs 04 (`templates/` holds the tested sources) |
+| Function signature / constant family | docs 05, then symbols dump, `lib*.cpp`, root Lua files, scrapiyard |
+| Database fields, passcodes, archetypes, new entries | docs 06 |
+| Engine behaviour (activation, relations, resets, Damage Step) | docs 07 |
+| Lint codes, load test, test boards, review checklist | docs 08 |
+
+## Maintenance
+
+* After changing `templates/`, run `python3 $T/build_cookbook.py --check`.
+* After updating ygopro-core, run `loadcheck.py setup --force` and `loadcheck.py symbols`.
+* When the house style changes upstream, update docs 03 and the rules above together.
