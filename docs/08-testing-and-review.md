@@ -55,6 +55,65 @@ Lua sources if the submodule is absent) and downloads the same `ScriptChecker` b
 uses. The cache lives in `~/.cache/edopro-card-scripting` (override with `EDOPRO_CACHE`).
 Rebuild with `setup --force` after the core changes, then run `symbols` again.
 
+## 2b. Engine tests (`explore.py`, scenario tests)
+
+The load test only runs `initial_effect`. These tools play real duels in ygopro-core, the
+engine EDOPro embeds, without the client: `duelsim.py` loads the `libocgcore.so` built by
+`loadcheck.py setup`, serves card data and scripts, decodes every prompt and answers it.
+Custom cards are read from `ZedjaCustomCards/`, sibling `*customcards*` repositories (and
+their `script/` folder) and `EDOPRO_CUSTOM`.
+
+```bash
+T=.claude/skills/edopro-card-scripting/tools
+python3 $T/explore.py --cards 270000402 --seeds 48   # random duels around one card
+python3 $T/explore.py --block 2700004                 # every card of an archetype block
+python3 $T/explore.py                                 # every scripted custom card
+python3 $T/scenarios_custom.py                        # the scripted scenario tests
+```
+
+**Random exploration** (`explore.py`) builds a board around each card's archetype (the
+card starts in the hand, on the field, in the GY or banished), gives the opponent either a
+passive hand or hand traps and removal, and plays about 7 turns with a seeded random policy
+for both players. Each duel runs in its own process. The report lists:
+
+| Section | Meaning |
+|---|---|
+| errors, invalid prompts, loops, crashes | Lua errors raised while effects ran, answers the engine rejected, the engine not reaching a prompt, a crashed or hung process |
+| rule violations | from `duelcheck.py`: a "once per turn"/"once per Duel" effect used twice (negated "activate 1 per turn" activations are refunded by the engine and not counted), or a forbidden Special Summon/activation after a lock (the table of locks is in `duelcheck.py`) |
+| prompt strings missing | an `aux.Stringid(id,n)` shown to the player with no `str(n+1)` in the database |
+| effects never reached | activated effects that no duel used: cover them with scenario tests |
+
+Exploration only proves that effects run cleanly and respect limits; it cannot tell whether
+a rule that never appears should have appeared. **Scenario tests** (`scenario.py`, tests in
+`scenarios_custom.py`) build an exact board (`Debug.AddCard` also attaches Xyz materials and
+marks cards as properly summoned; `Debug.PreSummon` sets the summon type), play exact
+moves and assert the result:
+
+```python
+@test
+def kiryu_counts_as_two_link_materials():
+	d = new_duel()
+	d.lua("Debug.AddCard(270000402,0,0,LOCATION_MZONE,2,POS_FACEUP_ATTACK,true)", "setup.lua")
+	d.add(270000411, 0, "extra"); filler(d, 0); filler(d, 1)
+	begin(d)                                   # stop at the first idle prompt
+	play(d, [Summon(270000411)])               # Act(code, idx), Pick(codes), Answer(yes), Phase("bp") ...
+	expect(270000411 in d.codes(0, "mzone"), "not Link Summoned with Kiryu alone")
+	return d
+```
+
+Write one for every built-in summoning procedure (allowed and forbidden case), every
+continuous effect with a visible result (ATK, protection, locks), and every effect the
+exploration reports as never reached. Engine errors and `duelcheck.py` violations during a
+scenario fail it too.
+
+Found this way in the custom cards (2026-09-26): "Build Rider - Kiryu" (a granted procedure
+that was never available, 07 §11) and the Cinder Token (a Token without `TYPE_NORMAL`,
+06 §5). Neither raises an error in lint or the load test.
+
+What these tests cannot cover: the client itself (card images, how texts and hints are
+displayed) and rulings the scripts misread; a scenario asserts the tester's reading of the
+text.
+
 ## 3. In-client testing
 
 Generate a board and load it as a puzzle:

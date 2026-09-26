@@ -9,6 +9,8 @@ Python 3 (standard library only). Run them from anywhere; they locate the CardSc
 | `EDOPRO_CDB` | every `BabelCDB*` folder next to CardScripts | extra `.cdb` files/folders (`:`-separated) |
 | `EDOPRO_CORE` | `../ygopro-core` | core sources used to build the checker library |
 | `EDOPRO_CACHE` | `~/.cache/edopro-card-scripting` | built `libocgcore.so`, `script_syntax_check`, `symbols.tsv` |
+| `EDOPRO_CUSTOM` | `ZedjaCustomCards/` and sibling `*customcards*` repos | extra custom-card folders for the engine tests (scripts and/or `.cdb`; a `script/` subfolder is included) |
+| `OCGCORE` | `$EDOPRO_CACHE/libocgcore.so` | engine library used by the engine tests |
 
 All commands also accept `--cdb <file|folder>` (repeatable) to include a custom database.
 
@@ -57,6 +59,36 @@ loadcheck.py symbols                  # dump the runtime Lua globals to symbols.
 Requires `g++` and `git`/`curl` access to GitHub for the first setup. The Lua sources come
 from `ygopro-core/lua/src` when the submodule is initialised, otherwise they are fetched at
 the pinned commit.
+
+## Engine tests: explore.py, scenarios_custom.py
+
+```bash
+explore.py                                  # every scripted custom card, 16 seeds per card
+explore.py --cards 270000402 --seeds 48     # selected cards
+explore.py --block 2700004 --out build.json # one archetype block (passcode // 100)
+explore.py --report build.json              # report of a saved run
+scenarios_custom.py                         # all scripted scenario tests
+scenarios_custom.py kiryu_counts_as_two_link_materials
+```
+
+Both play real duels in ygopro-core (the engine EDOPro embeds) through `duelsim.py`, which
+needs the `libocgcore.so` built by `loadcheck.py setup`. `explore.py` plays seeded random
+duels around each card (each in its own process) and reports Lua errors, invalid prompts,
+loops and crashes, rule violations found by `duelcheck.py` (usage limits, summon locks),
+prompt strings missing from the database and activated effects that no duel reached; the
+exit status is 1 when it finds a problem. `scenarios_custom.py` holds scripted tests built
+on `scenario.py` (steps: `Act`, `Summon`, `Pick`, `Answer`, `Option`, `Phase`, `Attack`;
+probes: `lua_bool`, `lua_val`, `Duel.state()`, `Duel.codes()`); the exit status is 1 when a
+test fails. The approach and what to test are described in `docs/08-testing-and-review.md`
+§2b.
+
+| File | Contents |
+|---|---|
+| `duelsim.py` | ctypes binding of the core API, card/script readers, prompt decoding and response encoding, policies (`Policy`, `RandomPolicy`), `Duel` |
+| `duelcheck.py` | Lua observer registered inside the duel; checks of usage limits and of the custom cards' summon/activation locks (`RESOLVE_LOCKS`, `ACTIVATE_LOCKS`) |
+| `explore.py` | exploration runner and report; `PROJECT_SUPPORT` lists official cards added to a custom card's deck |
+| `scenario.py` | scripted-test framework |
+| `scenarios_custom.py` | the tests of the ZedjaCustomCards cards |
 
 ## build_handbook.py
 
