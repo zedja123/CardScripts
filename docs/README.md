@@ -88,6 +88,8 @@ All tools are Python 3 standard library, in `.claude/skills/edopro-card-scriptin
 | `lint.py` | Static checks against the runtime API, the database entry and house style |
 | `loadcheck.py setup / run / symbols` | Builds the core, runs the CI ScriptChecker locally, dumps the runtime API |
 | `build_cookbook.py [--check]` | Regenerates chapter 04 from the templates and re-tests them |
+| `explore.py` | Random duels in ygopro-core around each custom card: errors, usage limits, locks, missing strings, unreached effects (08 §2b) |
+| `scenarios_custom.py` | Scripted scenario tests for the custom cards, on `scenario.py` and `duelsim.py` (08 §2b) |
 | `build_handbook.py -o FILE` | Renders all chapters into the single web page (needs `pip install markdown`) |
 
 See `tools/README.md` next to them for details.

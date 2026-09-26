@@ -60,14 +60,18 @@ host is blocked; `lint.py` still works with its static index.
    ```bash
    python3 $T/lint.py <script>            # zero E and W, or justify each remaining one
    python3 $T/loadcheck.py run <script>   # must print OK
+   python3 $T/explore.py --cards <id>[,<id>...] --seeds 48   # custom cards: random duels, 0 problems
+   python3 $T/scenarios_custom.py         # custom cards: scripted tests, all PASS
    python3 $T/cdb.py puzzle hand:<id> ... -o <user-visible dir>/<name>-test.lua
    ```
+   For custom cards, add scenario tests to `scenarios_custom.py` for every summoning
+   procedure, continuous effect and effect the exploration never reached (docs 08 §2b).
    Then re-read the script against the effect table and the checklist in chapter 08 §4.
 7. **Deliver.** Commit on the working branch (upstream-style message, e.g.
    `Add "Card Name"`), push, open/update the PR (one PR per batch; per card only for
    follow-up review work). Report: effect
-   table, decisions/assumptions, lint + load-test results, the test board, scenarios to run
-   in the client, open questions.
+   table, decisions/assumptions, lint + load-test (+ engine test) results, the test board,
+   scenarios to run in the client, open questions.
 
 ## Project decisions (user, 2026-09-26)
 
@@ -126,6 +130,10 @@ host is blocked; `lint.py` still works with its static index.
   `not Duel.IsDamageStep()` when the text excludes it; never add `EFFECT_FLAG_DAMAGE_STEP`
   to SINGLE triggers without a ruling. Quick Effects/FIELD triggers need the flag to be
   used in the Damage Step (+ `aux.StatChangeDamageStepCondition` for stat changes).
+* Granted effects (`EFFECT_TYPE_GRANT`) are clones owned by the card that receives them:
+  inside one, `e:GetOwner()`/`e:GetHandler()` is that card, not the granting card (docs 07 §11).
+* Tokens: database type `TYPES_TOKEN` (0x4011); without `TYPE_NORMAL` the engine looks for
+  a script and reports an error.
 * `SetOperation(nil)` and `SetValue(nil)` are accepted silently: a misspelled function
   name there is only caught by `lint.py` (E012).
 * `chk==0` must check everything the resolution needs and have no side effects; data from
@@ -155,7 +163,7 @@ host is blocked; `lint.py` still works with its static index.
 | Function signature / constant family | docs 05, then symbols dump, `lib*.cpp`, root Lua files, scrapiyard |
 | Database fields, passcodes, archetypes, new entries | docs 06 |
 | Engine behaviour (activation, relations, resets, Damage Step) | docs 07 |
-| Lint codes, load test, test boards, review checklist | docs 08 |
+| Lint codes, load test, engine tests, test boards, review checklist | docs 08 |
 
 ## Maintenance
 

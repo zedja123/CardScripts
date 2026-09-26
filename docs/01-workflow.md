@@ -106,14 +106,19 @@ python3 $T/cdb.py search '<regex on the wording>' --folder official --code '<reg
 ```bash
 python3 $T/lint.py <script>                 # fix every E and W (or justify it)
 python3 $T/loadcheck.py run <script>        # must print OK
+python3 $T/explore.py --cards <id> --seeds 48   # custom cards: random duels in the engine
+python3 $T/scenarios_custom.py              # custom cards: scripted scenario tests
 python3 $T/cdb.py puzzle hand:<id> ... -o <name>-test.lua   # board for the in-client test
 ```
 
+* For custom cards, add scenario tests for the summoning procedures, continuous effects
+  and any effect the exploration never reached (08 §2b).
 * Re-read the script against the effect table line by line (08 §4 checklist).
 * Walk through the scenarios in 08 §3 mentally; list the ones the user should run in the
   client.
 
-**Exit criterion**: lint clean, load test OK, checklist complete.
+**Exit criterion**: lint clean, load test OK, engine tests clean (custom cards), checklist
+complete.
 
 ## Phase 6 · Deliver
 

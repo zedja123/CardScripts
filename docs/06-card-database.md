@@ -98,7 +98,9 @@ TR 0x100.
 scripts). Upstream Tokens usually take the card's passcode + 1; inside a 100-number block that
 would collide with the next card, so custom Tokens take numbers from the **end** of the block
 (`cdb.py nextid <archetype> --token`). Each Token needs its own database entry (type
-`TYPES_TOKEN`).
+`TYPES_TOKEN` = 0x4011, Monster|Normal|Token). Keep `TYPE_NORMAL`: the engine loads a
+script for every card without it, and Tokens have none, so a Token typed 0x4001 raises a
+script error each time it is created.
 
 ## 5b. Choosing the database file
 

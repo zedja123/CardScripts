@@ -186,6 +186,13 @@ banishment and being turned face-down. Remove bits with `&~` (e.g.
 * Activity counters (`Duel.AddCustomActivityCounter`, `Duel.GetCustomActivityCount`) track
   summons/activations earlier in the turn; used by "the turn you activate this effect"
   locks.
+* Granted effects (`EFFECT_TYPE_FIELD+EFFECT_TYPE_GRANT` with the effect as label object)
+  are cloned onto every affected card, and the engine sets each clone's **owner to the
+  receiving card** (`field::adjust_grant_effect`). Inside a granted effect, `e:GetOwner()`
+  and `e:GetHandler()` are the card that gained it, never the card that grants it. To refer
+  to the granting card, find it on the field or capture it in a closure in
+  `initial_effect`. ("Build Rider - Kiryu" used `e:GetOwner()` in a procedure granted to
+  Extra Deck monsters, so the procedure was never available.)
 
 ## 12. Summon procedures and summon types
 
