@@ -38,9 +38,9 @@ host is blocked; `lint.py` still works with its static index.
    decisions below without asking again.
 2. **Card data.** Record stats and strings (`aux.Stringid(id,n)` = `str(n+1)`). For C take
    the passcode from `cdb.py nextid <archetype>` (`--token` for Tokens), write a JSON spec,
-   run `cdb.py new spec.json` (dry run) and then `--write` (defaults to
-   `ZedjaCustomCards/ZedjaCustomCards.cdb` for 27xxxxxxx passcodes). For B ask which database
-   file to use.
+   run `cdb.py new spec.json` (dry run) and then `--write` (27xxxxxxx passcodes default to
+   their archetype's `ZedjaCustomCards/<Archetype>.cdb`; the first card of a new archetype
+   needs `--db ZedjaCustomCards/<Archetype>.cdb`). For B ask which database file to use.
 3. **Effect table.** Parse the text with `docs/02-psct-to-lua.md`.
    One row per effect: verbatim text without the final period, kind + `SetType`, event/code,
    range, condition, count limit, cost, target, resolution (with connectives), categories.
@@ -72,8 +72,9 @@ host is blocked; `lint.py` still works with its static index.
 ## Project decisions (user, 2026-09-26)
 
 * Credit line: `--scripted by Zedja` as line 3 of every new script.
-* Custom cards: folder `ZedjaCustomCards/` (flat), database
-  `ZedjaCustomCards/ZedjaCustomCards.cdb`, scope Custom (`ot` 0x20).
+* Custom cards: folder `ZedjaCustomCards/` (flat), **one database per archetype** named
+  after it (`ZedjaCustomCards/Prismiant.cdb`, ...), scope Custom (`ot` 0x20). Legacy
+  standalone cards keep their own database (for example `AlbazTheFallen.cdb`).
 * Custom passcodes: `270000000 + 100*(archetype-1) + n` (archetype 1 = 270000000-270000099);
   Tokens from the end of the block. Use `cdb.py nextid`.
 * Custom archetype setcodes: `0xE00 + (archetype-1)` (archetype 1 = `0xe00`, 2 = `0xe01`),

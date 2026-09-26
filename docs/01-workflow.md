@@ -24,8 +24,8 @@ on. Commands are run from the CardScripts root; `T=.claude/skills/edopro-card-sc
 
 Ask the user only for what cannot be derived: missing stats or text for B/C and the intended
 behaviour when the text is ambiguous. Everything else follows this guide and the project
-decisions in the README: custom cards go to `ZedjaCustomCards/` with their row in
-`ZedjaCustomCards/ZedjaCustomCards.cdb`, passcodes come from `cdb.py nextid <archetype>`,
+decisions in the README: custom cards go to `ZedjaCustomCards/` with their row in their
+archetype's database `ZedjaCustomCards/<Archetype>.cdb`, passcodes come from `cdb.py nextid <archetype>`,
 and every new script carries `--scripted by Zedja`. For a new custom archetype, confirm its
 number (and therefore its passcode block) with the user.
 

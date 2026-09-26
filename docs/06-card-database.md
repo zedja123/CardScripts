@@ -106,7 +106,7 @@ would collide with the next card, so custom Tokens take numbers from the **end**
 |---|---|
 | Unscripted official card already in BabelCDB | None to create; only the strings may need completing |
 | New prerelease card | `prerelease-<set>.cdb` (upstream practice) |
-| Custom card | `ZedjaCustomCards/ZedjaCustomCards.cdb` (project decision); `cdb.py new --write` uses it by default for 27xxxxxxx passcodes |
+| Custom card | The database of its archetype, `ZedjaCustomCards/<Archetype>.cdb` (project decision: one database per archetype). `cdb.py new --write` picks it by default: the `.cdb` in `ZedjaCustomCards/` that holds the other cards of the same passcode block. The first card of a new archetype needs `--db ZedjaCustomCards/<Archetype>.cdb`, which creates the file |
 
 ## 6. Creating or updating an entry
 
@@ -138,7 +138,8 @@ would collide with the next card, so custom Tokens take numbers from the **end**
 ```bash
 python3 tools/cdb.py nextid 1                            # next free passcode of custom archetype 1
 python3 tools/cdb.py new card.json                       # dry run: prints the row and the target file
-python3 tools/cdb.py new card.json --write               # 27xxxxxxx -> ZedjaCustomCards/ZedjaCustomCards.cdb
+python3 tools/cdb.py new card.json --write               # 27xxxxxxx -> its archetype's ZedjaCustomCards/<Archetype>.cdb
+python3 tools/cdb.py new card.json --db ZedjaCustomCards/Milacresy.cdb --write   # first card of a new archetype
 python3 tools/cdb.py new card.json --db other.cdb --write   # any other database, explicitly
 python3 tools/cdb.py show 270000000                      # the custom database is always included
 ```

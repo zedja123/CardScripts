@@ -18,5 +18,5 @@ Repository rules: tabs, LF, UTF-8; one script per card named `c<passcode>.lua`; 
 `MODERNIZING.md` and `CONTRIBUTING.md`.
 
 Project decisions: credit `--scripted by Zedja`; custom cards in `ZedjaCustomCards/` with
-`ZedjaCustomCards/ZedjaCustomCards.cdb`; passcodes `270000000 + 100*(archetype-1) + n`
+one database per archetype (`ZedjaCustomCards/<Archetype>.cdb`); passcodes `270000000 + 100*(archetype-1) + n`
 and setcodes `0xE00 + (archetype-1)` (`cdb.py nextid`); one pull request per batch. Keep every folder one level deep (CI checker).

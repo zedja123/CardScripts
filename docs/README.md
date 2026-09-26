@@ -55,7 +55,7 @@ it should be committed or only reviewed.
 |---|---|
 | Credit line in new scripts | `--scripted by Zedja` (line 3 of the header) |
 | Folder for custom cards | `ZedjaCustomCards/` in CardScripts (flat, no subfolders) |
-| Database for custom cards | `ZedjaCustomCards/ZedjaCustomCards.cdb` (next to the scripts, so the hourly BabelCDBZedja reset cannot erase it) |
+| Databases for custom cards | One per archetype, named after it: `ZedjaCustomCards/<Archetype>.cdb` (next to the scripts, so the hourly BabelCDBZedja reset cannot erase them; changed from a single `ZedjaCustomCards.cdb` on 2026-09-26) |
 | Passcodes for custom cards | `270000000 + 100 × (archetype − 1) + n`: archetype 1 = `270000000`–`270000099`, archetype 2 = `270000100`–`270000199`, ... (`cdb.py nextid <archetype>`) |
 | Tokens of custom cards | From the end of the archetype's block downwards (`...99`, `...98`, ...), so card numbers stay contiguous |
 | Setcodes of custom archetypes | `0xE00 + (archetype − 1)`: archetype 1 = `0xe00`, archetype 2 = `0xe01`, ... (the `0xB00`–`0xF00` blocks are unused by every card in BabelCDB). Each script declares it as a file-local constant (`local SET_NAME=0xe00`); add `!setname 0xe00 <Name>` to `strings.conf` to show the name in the client |
