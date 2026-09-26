@@ -100,7 +100,14 @@ host is blocked; `lint.py` still works with its static index.
   `Duel.BreakEffect()`; "then you can" → also `SelectYesNo`; "and if you do" → B only if A
   happened, no break; "also" → independent and simultaneous, no break; plain "and" → both
   required: check both are possible before doing either. After "A, then B" the last thing
-  that happened is B, so "When ...: You can" triggers on A miss the timing.
+  that happened is B, so "When ...: You can" triggers on A miss the timing. "then you can
+  A, and if you do, B" → check that B is possible too before `SelectYesNo`, so A is never
+  paid for nothing.
+* "When this card is activated: Add ..." (no "You can") is mandatory: `chk==0` requires a
+  card to add. "When this card is activated: You can add ..." → `chk==0` returns true,
+  `SelectYesNo` in the operation, OPT via a flag set only when used.
+* "This card is also X-Attribute" → `EFFECT_ADD_ATTRIBUTE` with `SetRange(LOCATION_MZONE)`
+  only (field-only, as in every official script with this wording).
 * Target references (docs 02 §10): "that target"/"the targeted" → `IsRelateToEffect` +
   the target filter again; "it"/"they" → `IsRelateToEffect` only (relations survive flips
   and control changes); "both" → do nothing unless every target still qualifies.
