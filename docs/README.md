@@ -58,14 +58,11 @@ it should be committed or only reviewed.
 | Database for custom cards | `ZedjaCustomCards/ZedjaCustomCards.cdb` (next to the scripts, so the hourly BabelCDBZedja reset cannot erase it) |
 | Passcodes for custom cards | `270000000 + 100 × (archetype − 1) + n`: archetype 1 = `270000000`–`270000099`, archetype 2 = `270000100`–`270000199`, ... (`cdb.py nextid <archetype>`) |
 | Tokens of custom cards | From the end of the archetype's block downwards (`...99`, `...98`, ...), so card numbers stay contiguous |
+| Setcodes of custom archetypes | `0xE00 + (archetype − 1)`: archetype 1 = `0xe00`, archetype 2 = `0xe01`, ... (the `0xB00`–`0xF00` blocks are unused by every card in BabelCDB). Each script declares it as a file-local constant (`local SET_NAME=0xe00`); add `!setname 0xe00 <Name>` to `strings.conf` to show the name in the client |
 | Pull requests | One per batch; if a card needs code review, one per card afterwards |
 | Modernising old code around a fix | Only the touched lines |
 
-Still open (a default is used until you decide):
-
-| Decision | Default |
-|---|---|
-| Setcodes of custom archetypes | `0xE00 + archetype number` (archetype 1 = `0xe01`); the `0xB00`–`0xF00` blocks are unused by every card in BabelCDB. Each script declares it as a file-local constant (`local SET_NAME=0xe01`); add `!setname 0xe01 <Name>` to `strings.conf` to show the name in the client |
+All of the above were confirmed by the user on 2026-09-26.
 
 ## Important findings
 

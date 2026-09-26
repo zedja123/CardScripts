@@ -76,8 +76,9 @@ host is blocked; `lint.py` still works with its static index.
   `ZedjaCustomCards/ZedjaCustomCards.cdb`, scope Custom (`ot` 0x20).
 * Custom passcodes: `270000000 + 100*(archetype-1) + n` (archetype 1 = 270000000-270000099);
   Tokens from the end of the block. Use `cdb.py nextid`.
-* Custom archetype setcodes: **default only, not confirmed by the user**: `0xE00 + archetype
-  number`, declared as a file-local `local SET_NAME=0xe01`; mention it in the report.
+* Custom archetype setcodes: `0xE00 + (archetype-1)` (archetype 1 = `0xe00`, 2 = `0xe01`),
+  declared as a file-local `local SET_NAME=0xe00`; sub-archetypes use the high nibble
+  (`0x1e00`, ...).
 * Pull requests: one per batch; if a card needs code review afterwards, one per card.
 * Fixes: modernise only the touched lines.
 

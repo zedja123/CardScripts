@@ -381,7 +381,7 @@ def cmd_nextid(args):
 	order = reversed(block) if args.token else block
 	free = [i for i in order if i not in used]
 	print(f"archetype {args.archetype}: {block.start}-{block.stop - 1}, {len(used)} used"
-	      f", default setcode {hex(C.CUSTOM_SETCODE_BASE + args.archetype)}")
+	      f", setcode {hex(C.custom_setcode(args.archetype))}")
 	if not free:
 		print("block full")
 		return 1

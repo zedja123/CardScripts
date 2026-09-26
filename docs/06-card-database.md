@@ -72,11 +72,13 @@ TR 0x100.
 * Constants live in `archetype_setcode_constants.lua` (615 entries). Look one up with
   `cdb.py archetype "<name>"` or `cdb.py archetype 0x1e4`.
 * New archetype for a custom card: official `SET_` constants stop at `0x208` and the
-  anime/manga entries at `0xac1`; the `0xB00`–`0xF00` blocks are unused. Default for this
-  project (until decided otherwise): `0xE00 + archetype number` (archetype 1 = `0xe01`).
-  Declare it at the top of each script as a file-local constant (`local SET_NAME=0xe01`),
-  put it in the database `setcode`, and optionally show its name in the client with a
-  `strings.conf` line `!setname 0xe01 <Name>`.
+  anime/manga entries at `0xac1`; the `0xB00`–`0xF00` blocks are unused. **Project rule
+  (confirmed):** `0xE00 + (archetype − 1)`, so archetype 1 = `0xe00`, archetype 2 = `0xe01`
+  (`cdb.py nextid <archetype>` prints it). Declare it at the top of each script as a
+  file-local constant (`local SET_NAME=0xe00`), put it in the database `setcode`, and
+  optionally show its name in the client with a `strings.conf` line `!setname 0xe00 <Name>`.
+  A sub-archetype inside a custom archetype uses the high nibble (`0x1e00`, `0x2e00`, ...;
+  see the matching rule above).
 
 ## 5. Passcodes
 
@@ -121,7 +123,7 @@ would collide with the next card, so custom Tokens take numbers from the **end**
   "level": 3,
   "atk": 500,
   "def": 500,
-  "setcodes": ["0xe01"],
+  "setcodes": ["0xe00"],
   "desc": "If this card is Normal Summoned: You can add 1 \"Example\" card from your Deck to your hand. ...",
   "strings": ["If this card is Normal Summoned: You can add 1 \"Example\" card from your Deck to your hand"]
 }

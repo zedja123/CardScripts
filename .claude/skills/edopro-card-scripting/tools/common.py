@@ -46,7 +46,7 @@ CREDIT_LINE = "--scripted by Zedja"
 CUSTOM_PASSCODE_BASE = 270000000
 CUSTOM_BLOCK = 100
 CUSTOM_PASSCODE_END = 279999999
-# Custom archetype setcodes (default, not chosen by the user yet): 0xE00 + archetype number
+# Custom archetype setcodes (confirmed by the user): 0xE00 + (archetype-1); archetype 1 = 0xE00
 CUSTOM_SETCODE_BASE = 0xE00
 
 SCRIPT_FOLDERS = ["official", "pre-release", "pre-errata", "unofficial", "goat", "rush", "skill", CUSTOM_FOLDER]
@@ -56,6 +56,11 @@ def custom_block(archetype: int) -> range:
 	"""Passcodes of custom archetype number `archetype` (1-based)."""
 	start = CUSTOM_PASSCODE_BASE + CUSTOM_BLOCK * (archetype - 1)
 	return range(start, start + CUSTOM_BLOCK)
+
+
+def custom_setcode(archetype: int) -> int:
+	"""Setcode of custom archetype number `archetype` (1-based): 0xE00, 0xE01, ..."""
+	return CUSTOM_SETCODE_BASE + archetype - 1
 
 
 def is_custom_passcode(code: int) -> bool:
