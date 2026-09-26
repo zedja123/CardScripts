@@ -35,7 +35,31 @@ WORKSPACE = SCRIPTS_ROOT.parent
 CORE_DIR = Path(os.environ.get("EDOPRO_CORE", WORKSPACE / "ygopro-core"))
 SCRAPIYARD_DIR = Path(os.environ.get("EDOPRO_SCRAPIYARD", WORKSPACE / "scrapiyard"))
 CACHE_DIR = Path(os.environ.get("EDOPRO_CACHE", Path.home() / ".cache" / "edopro-card-scripting"))
-SCRIPT_FOLDERS = ["official", "pre-release", "pre-errata", "unofficial", "goat", "rush", "skill"]
+
+# ---------------------------------------------------------------- project decisions (2026-09-26)
+# Custom cards: scripts and their database live together in one flat folder of CardScripts.
+CUSTOM_FOLDER = "ZedjaCustomCards"
+CUSTOM_DIR = SCRIPTS_ROOT / CUSTOM_FOLDER
+CUSTOM_DB = CUSTOM_DIR / "ZedjaCustomCards.cdb"
+CREDIT_LINE = "--scripted by Zedja"
+# Passcodes: 270000000 + 100*(archetype-1) + card; archetype 1 = 270000000-270000099, 2 = ...100-...199
+CUSTOM_PASSCODE_BASE = 270000000
+CUSTOM_BLOCK = 100
+CUSTOM_PASSCODE_END = 279999999
+# Custom archetype setcodes (default, not chosen by the user yet): 0xE00 + archetype number
+CUSTOM_SETCODE_BASE = 0xE00
+
+SCRIPT_FOLDERS = ["official", "pre-release", "pre-errata", "unofficial", "goat", "rush", "skill", CUSTOM_FOLDER]
+
+
+def custom_block(archetype: int) -> range:
+	"""Passcodes of custom archetype number `archetype` (1-based)."""
+	start = CUSTOM_PASSCODE_BASE + CUSTOM_BLOCK * (archetype - 1)
+	return range(start, start + CUSTOM_BLOCK)
+
+
+def is_custom_passcode(code: int) -> bool:
+	return CUSTOM_PASSCODE_BASE <= code <= CUSTOM_PASSCODE_END
 
 
 # ---------------------------------------------------------------- databases
@@ -47,6 +71,8 @@ def cdb_paths(extra=()) -> list[Path]:
 	for d in sorted(WORKSPACE.iterdir()):
 		if d.is_dir() and d.name.lower().startswith("babelcdb"):
 			sources.append(d)
+	if CUSTOM_DIR.is_dir():
+		sources.append(CUSTOM_DIR)
 	for item in os.environ.get("EDOPRO_CDB", "").split(os.pathsep):
 		if item:
 			sources.append(Path(item))

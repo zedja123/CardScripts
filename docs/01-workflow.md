@@ -22,10 +22,12 @@ on. Commands are run from the CardScripts root; `T=.claude/skills/edopro-card-sc
 | B. Official card not in BabelCDB yet (new announcement) | Not found; user gives text/stats | Needs a prerelease-style entry and passcode |
 | C. Custom card | User says so, or not found and no official source | Needs a custom entry, passcode in the custom range, custom archetype if any |
 
-Ask the user only for what cannot be derived: missing stats or text for B/C, the intended
-behaviour when the text is ambiguous, and the first-time decisions in the README (target
-folder and database for custom cards, credit line, passcode range). Everything else follows
-the conventions in this guide.
+Ask the user only for what cannot be derived: missing stats or text for B/C and the intended
+behaviour when the text is ambiguous. Everything else follows this guide and the project
+decisions in the README: custom cards go to `ZedjaCustomCards/` with their row in
+`ZedjaCustomCards/ZedjaCustomCards.cdb`, passcodes come from `cdb.py nextid <archetype>`,
+and every new script carries `--scripted by Zedja`. For a new custom archetype, confirm its
+number (and therefore its passcode block) with the user.
 
 **Exit criterion**: every card has either a database entry or a complete spec (name, type,
 stats, exact text).
@@ -110,9 +112,10 @@ python3 $T/cdb.py puzzle hand:<id> ... -o <name>-test.lua   # board for the in-c
 
 ## Phase 6 · Deliver
 
-1. Commit the script (and database changes, if any and if agreed) on the working branch
-   with a message in the upstream style (`Add "Card Name"`, `Added new card scripts`).
-2. Push and open or update the pull request when working through GitHub.
+1. Commit the script (and database changes) on the working branch with a message in the
+   upstream style (`Add "Card Name"`, `Added new card scripts`).
+2. Push and open or update the pull request: **one pull request per batch**. If a card in
+   the batch needs code review afterwards, handle each such card in its own pull request.
 3. Report to the user:
    * the effect table (or a condensed version),
    * decisions and assumptions (rulings, ambiguous wording),

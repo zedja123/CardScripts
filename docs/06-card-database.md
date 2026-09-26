@@ -71,10 +71,12 @@ TR 0x100.
   match a `0x3184` card.
 * Constants live in `archetype_setcode_constants.lua` (615 entries). Look one up with
   `cdb.py archetype "<name>"` or `cdb.py archetype 0x1e4`.
-* New archetype for a custom card: pick a value far from the official range (the file lists
-  a few unused low values; custom projects typically use high values), add it to the
-  database, and optionally show its name in the client with a `strings.conf` line
-  `!setname 0x<value> <Name>`.
+* New archetype for a custom card: official `SET_` constants stop at `0x208` and the
+  anime/manga entries at `0xac1`; the `0xB00`–`0xF00` blocks are unused. Default for this
+  project (until decided otherwise): `0xE00 + archetype number` (archetype 1 = `0xe01`).
+  Declare it at the top of each script as a file-local constant (`local SET_NAME=0xe01`),
+  put it in the database `setcode`, and optionally show its name in the client with a
+  `strings.conf` line `!setname 0xe01 <Name>`.
 
 ## 5. Passcodes
 
@@ -87,9 +89,14 @@ TR 0x100.
 | `30ZYYYXXX` | Speed Duel skills |
 | `5XXXXXXXX`, `200XXXXXX`, `800XXXXXX`, `810XXXXXX`, `777777777` | Anime/manga |
 
-Custom cards: choose one 9-digit block outside these ranges and keep all custom cards in
-it (the wiki tutorial uses `270270001`). A Token created by a card conventionally uses the
-card's passcode + 1 and needs its own database entry (type `TYPES_TOKEN`).
+**Custom cards (project decision):** passcodes `270000000 + 100 × (archetype − 1) + n`
+(archetype 1 = `270000000`–`270000099`, archetype 2 = `270000100`–`270000199`, ...). The
+27xxxxxxx range is unused in every BabelCDB database (checked 2026-09-26).
+`cdb.py nextid <archetype>` prints the next free number (it checks all databases and
+scripts). Upstream Tokens usually take the card's passcode + 1; inside a 100-number block that
+would collide with the next card, so custom Tokens take numbers from the **end** of the block
+(`cdb.py nextid <archetype> --token`). Each Token needs its own database entry (type
+`TYPES_TOKEN`).
 
 ## 5b. Choosing the database file
 
@@ -97,7 +104,7 @@ card's passcode + 1 and needs its own database entry (type `TYPES_TOKEN`).
 |---|---|
 | Unscripted official card already in BabelCDB | None to create; only the strings may need completing |
 | New prerelease card | `prerelease-<set>.cdb` (upstream practice) |
-| Custom card | A separate file, e.g. `cards-custom.cdb` or `expansions/<name>.cdb` in the client, never the official files |
+| Custom card | `ZedjaCustomCards/ZedjaCustomCards.cdb` (project decision); `cdb.py new --write` uses it by default for 27xxxxxxx passcodes |
 
 ## 6. Creating or updating an entry
 
@@ -105,8 +112,8 @@ card's passcode + 1 and needs its own database entry (type `TYPES_TOKEN`).
 
 ```json
 {
-  "id": 270270001,
-  "name": "Deskbot 002+",
+  "id": 270000000,
+  "name": "Example Custom Monster",
   "ot": "custom",
   "type": ["monster", "effect", "tuner"],
   "race": "machine",
@@ -114,9 +121,9 @@ card's passcode + 1 and needs its own database entry (type `TYPES_TOKEN`).
   "level": 3,
   "atk": 500,
   "def": 500,
-  "setcodes": ["SET_DESKBOT"],
-  "desc": "If this card is Normal Summoned: You can add 1 \"Deskbot\" card from your Deck to your hand. ...",
-  "strings": ["If this card is Normal Summoned: You can add 1 \"Deskbot\" card from your Deck to your hand"]
+  "setcodes": ["0xe01"],
+  "desc": "If this card is Normal Summoned: You can add 1 \"Example\" card from your Deck to your hand. ...",
+  "strings": ["If this card is Normal Summoned: You can add 1 \"Example\" card from your Deck to your hand"]
 }
 ```
 
@@ -127,9 +134,11 @@ card's passcode + 1 and needs its own database entry (type `TYPES_TOKEN`).
 * `setcodes` accepts `SET_` constant names or hex strings, up to four.
 
 ```bash
-python3 tools/cdb.py new card.json                       # dry run: prints the row
-python3 tools/cdb.py new card.json --db path/to/cards-custom.cdb --write
-python3 tools/cdb.py --cdb path/to/cards-custom.cdb show 270270001
+python3 tools/cdb.py nextid 1                            # next free passcode of custom archetype 1
+python3 tools/cdb.py new card.json                       # dry run: prints the row and the target file
+python3 tools/cdb.py new card.json --write               # 27xxxxxxx -> ZedjaCustomCards/ZedjaCustomCards.cdb
+python3 tools/cdb.py new card.json --db other.cdb --write   # any other database, explicitly
+python3 tools/cdb.py show 270000000                      # the custom database is always included
 ```
 
 GUI alternatives: DataEditorX (use the Project Ignis `cardinfo_english.txt` for the EDOPro

@@ -33,6 +33,8 @@ python3 .claude/skills/edopro-card-scripting/tools/lint.py --quiet pre-release/ 
 | W043/W044 | warning | Targets selected without `EFFECT_FLAG_CARD_TARGET` / without `chkc` handling |
 | W051 | warning | Metadata name that looks like a typo (`s.listes_names`) |
 | W080 | warning | `io`, `os`, `print`, ... (unavailable in the client) |
+| W060/W061 | warning | `ZedjaCustomCards/` script with a passcode outside 27xxxxxxx / database entry without the Custom scope |
+| S072 | style | `ZedjaCustomCards/` script without the `--scripted by Zedja` credit line |
 | S0xx | style | Description missing, `+`/`\|` misuse, `GetCount`, hardcoded setcodes, header, whitespace |
 | I0xx | info | Worth a look: unused strings, `listed_names`, Damage Step flag on SINGLE triggers, `if tc and` |
 
@@ -146,6 +148,8 @@ Project Ignis asks for bug reports on Discord rather than GitHub.
 
 ## 6. Commit and pull-request conventions
 
+* Project policy: **one pull request per batch** of cards; if a card needs code review
+  afterwards, each such card gets its own pull request.
 * Upstream titles: `Add "Card Name"` (new unofficial card), `Fix "Card Name"` or
   `"Card Name" fix` / `Update "Card Name"` (fixes), `Added new card scripts` (batches).
 * Upstream wants one card per pull request for unofficial additions, a Yugipedia link in

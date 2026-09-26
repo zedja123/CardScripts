@@ -274,6 +274,8 @@ class Linter:
 			r.add("E", "E003", "file name must be cPASSCODE.lua", line=1)
 		card = self.cards.get(cid, [None])[0] if cid else None
 		self.check_header(r, src, code, card)
+		if path.resolve().parent.name == C.CUSTOM_FOLDER:
+			self.check_custom(r, src, cid, card)
 		self.check_names(r, code)
 		self.check_s_members(r, code)
 		self.check_effects(r, code, card)
@@ -301,6 +303,19 @@ class Linter:
 			r.add("S", "S071", "header should be: --<Japanese name> / --<English name> [/ --scripted by ...]", line=1)
 		elif card and lines[1][2:].strip() != card.name:
 			r.add("S", "S071", f"line 2 should be the database name: --{card.name}", line=2)
+
+	# -- project rules for custom cards (ZedjaCustomCards)
+	def check_custom(self, r, src, cid, card):
+		lines = src.splitlines()
+		if cid is not None and not C.is_custom_passcode(cid):
+			r.add("W", "W060", f"custom card passcode {cid} is outside {C.CUSTOM_PASSCODE_BASE}-"
+			      f"{C.CUSTOM_PASSCODE_END}", line=1)
+		if len(lines) < 3 or lines[2].strip() != C.CREDIT_LINE:
+			r.add("S", "S072", f"line 3 should be the credit line `{C.CREDIT_LINE}`", line=3)
+		if card and card.db != C.CUSTOM_DB.name:
+			r.add("I", "I060", f"database entry found in {card.db}, expected {C.CUSTOM_DB.name}", line=1)
+		if card and not card.ot & 0x20:
+			r.add("W", "W061", "custom card database entry lacks the Custom scope (ot 0x20)", line=1)
 
 	# -- globals and namespaces
 	def check_names(self, r, code):

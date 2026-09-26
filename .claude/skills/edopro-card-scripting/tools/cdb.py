@@ -7,6 +7,7 @@ Commands:
   analogs  ID|NAME | --text T   for each effect clause, list scripted cards with the most similar wording
   archetype NAME|HEX            SET_ constants matching a name or value, with card counts
   new      SPEC.json            build a datas/texts row from a readable spec (dry run unless --write)
+  nextid   ARCHETYPE_NUMBER     next free custom passcode in that archetype's block
   puzzle   [opp:]ZONE:ID ...    write an EDOPro puzzle that sets up a test board
 
 Examples:
@@ -16,7 +17,8 @@ Examples:
   cdb.py analogs 101402088 --top 3
   cdb.py analogs --text 'If this card is sent to the GY: You can target 1 Spell in your GY; add it to your hand.'
   cdb.py archetype "Raise Moon"
-  cdb.py new mycard.json --db ../BabelCDBZedja/cards-custom.cdb --write
+  cdb.py nextid 1                       # first custom archetype: 270000000-270000099
+  cdb.py new mycard.json --write         # custom passcodes default to ZedjaCustomCards/ZedjaCustomCards.cdb
   cdb.py puzzle hand:101402082 deck:101402082 opp:szone:"Mirror Force" -o test.lua
 """
 from __future__ import annotations
@@ -342,12 +344,18 @@ def cmd_new(args):
 		print(f"note: passcode {datas[0]} already exists in: {', '.join(c.db for c in cards[datas[0]])}")
 	print("datas:", datas)
 	print("texts:", texts[:3], "+ strings:", [s for s in texts[3:] if s])
+	custom = C.is_custom_passcode(datas[0])
+	if custom and not datas[1] & 0x20:
+		print("warning: custom passcode but the scope (ot) lacks Custom (0x20)")
+	target = Path(args.db) if args.db else (C.CUSTOM_DB if custom else None)
 	if not args.write:
-		print("dry run: pass --db PATH --write to insert/replace the row")
+		where = f"--write (target {target})" if target else "--db PATH --write"
+		print(f"dry run: pass {where} to insert/replace the row")
 		return 0
-	if not args.db:
-		sys.exit("--write needs --db PATH")
-	db = Path(args.db)
+	if target is None:
+		sys.exit("--write needs --db PATH (only custom passcodes default to " + str(C.CUSTOM_DB) + ")")
+	db = target
+	db.parent.mkdir(parents=True, exist_ok=True)
 	con = sqlite3.connect(db)
 	con.execute('CREATE TABLE IF NOT EXISTS "datas" ("id" INTEGER, "ot" INTEGER, "alias" INTEGER, '
 	            '"setcode" INTEGER, "type" INTEGER, "atk" INTEGER, "def" INTEGER, "level" INTEGER, '
@@ -359,6 +367,25 @@ def cmd_new(args):
 	con.commit()
 	con.close()
 	print(f"written to {db}")
+	return 0
+
+
+# ---------------------------------------------------------------- custom passcodes
+
+def cmd_nextid(args):
+	"""Next free passcode in a custom archetype block (cards count up, Tokens count down)."""
+	cards = C.load_cards(args.cdb)
+	scripts = C.script_index(args.scripts)
+	block = C.custom_block(args.archetype)
+	used = {i for i in block if i in cards or i in scripts}
+	order = reversed(block) if args.token else block
+	free = [i for i in order if i not in used]
+	print(f"archetype {args.archetype}: {block.start}-{block.stop - 1}, {len(used)} used"
+	      f", default setcode {hex(C.CUSTOM_SETCODE_BASE + args.archetype)}")
+	if not free:
+		print("block full")
+		return 1
+	print(("next Token passcode: " if args.token else "next card passcode: ") + " ".join(map(str, free[:args.count])))
 	return 0
 
 
@@ -452,6 +479,12 @@ def main(argv=None):
 	p.add_argument("--db", help="target .cdb (created if missing)")
 	p.add_argument("--write", action="store_true")
 	p.set_defaults(fn=cmd_new)
+
+	p = sub.add_parser("nextid", help="next free custom passcode for an archetype block")
+	p.add_argument("archetype", type=int, help="custom archetype number (1 = 270000000-270000099)")
+	p.add_argument("--token", action="store_true", help="count down from the end of the block (Tokens)")
+	p.add_argument("--count", type=int, default=1, help="how many free passcodes to list")
+	p.set_defaults(fn=cmd_nextid)
 
 	p = sub.add_parser("puzzle", help="write a puzzle file that sets up a test board")
 	p.add_argument("cards", nargs="+", help="[opp:]ZONE:PASSCODE|NAME, e.g. hand:101402082 opp:mzone:89631139")

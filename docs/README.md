@@ -46,19 +46,23 @@ it should be committed or only reviewed.
 3. A short report: the effect table, decisions/assumptions, verification results (lint and
    load test), a test board (`*.lua` puzzle) and the scenarios to try in the client.
 
-## First-time decisions (to settle once)
+## Project decisions (settled 2026-09-26)
 
-These are not defined by the repositories, so they need your answer the first time they
-matter:
-
-| Decision | Default until you decide |
+| Decision | Value |
 |---|---|
-| Credit line in new scripts (`--scripted by ...`) | Omitted |
-| Folder for custom cards in this fork | Ask before creating one (suggestion: `custom/`) |
-| Database file for custom cards | Ask (suggestion: a separate `cards-custom.cdb`, **not** on BabelCDBZedja `master`, see below) |
-| Passcode block for custom cards | Ask (must avoid the reserved ranges in 06 §5) |
-| One pull request per card or per batch | One per batch |
-| Modernise old code around a fix | Only the touched lines |
+| Credit line in new scripts | `--scripted by Zedja` (line 3 of the header) |
+| Folder for custom cards | `ZedjaCustomCards/` in CardScripts (flat, no subfolders) |
+| Database for custom cards | `ZedjaCustomCards/ZedjaCustomCards.cdb` (next to the scripts, so the hourly BabelCDBZedja reset cannot erase it) |
+| Passcodes for custom cards | `270000000 + 100 × (archetype − 1) + n`: archetype 1 = `270000000`–`270000099`, archetype 2 = `270000100`–`270000199`, ... (`cdb.py nextid <archetype>`) |
+| Tokens of custom cards | From the end of the archetype's block downwards (`...99`, `...98`, ...), so card numbers stay contiguous |
+| Pull requests | One per batch; if a card needs code review, one per card afterwards |
+| Modernising old code around a fix | Only the touched lines |
+
+Still open (a default is used until you decide):
+
+| Decision | Default |
+|---|---|
+| Setcodes of custom archetypes | `0xE00 + archetype number` (archetype 1 = `0xe01`); the `0xB00`–`0xF00` blocks are unused by every card in BabelCDB. Each script declares it as a file-local constant (`local SET_NAME=0xe01`); add `!setname 0xe01 <Name>` to `strings.conf` to show the name in the client |
 
 ## Important findings
 

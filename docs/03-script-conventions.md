@@ -16,10 +16,10 @@ older scripts differ.
 | Pre-errata version | `pre-errata/` | |
 | Anime / manga / video-game card | `unofficial/` | `c511xxxxxx.lua` etc. |
 | Rush Duel / Speed Duel skill / GOAT format | `rush/`, `skill/`, `goat/` | |
-| Custom card | decided by the user (see the README, "first-time decisions") | 9-digit passcode outside the reserved ranges (06-card-database.md §5) |
+| Custom card (Zedja) | `ZedjaCustomCards/` | `c<27xxxxxxx>.lua`, passcode from `cdb.py nextid <archetype>` (06 §5) |
 
-* The script name must match the database passcode exactly (`c270270001.lua` for
-  `270270001`). The CI checker skips passcodes with 3 digits or fewer.
+* The script name must match the database passcode exactly (`c270000000.lua` for
+  `270000000`). The CI checker skips passcodes with 3 digits or fewer.
 * Alternate artworks have no script of their own (the database `alias` points to the
   original).
 * UTF-8, LF line endings, **tabs** for indentation, no trailing whitespace
@@ -27,14 +27,14 @@ older scripts differ.
 * Keep every folder one level deep. The CI ScriptChecker scans subfolders and, depending on
   directory order, fails to load the root `proc_*.lua` libraries when a non-hidden folder
   nested two levels deep contains files (reproduced locally on 2026-09-26). New folders
-  (for example `custom/`) must not have subfolders; `loadcheck.py run` warns about them.
+  (such as `ZedjaCustomCards/`) must not have subfolders; `loadcheck.py run` warns about them.
 
 ## 2. Header
 
 ```lua
 --灰流うらら                 <- line 1: official Japanese name (Japanese characters)
 --Ash Blossom & Joyous Spring <- line 2: English name, identical to the database name
---scripted by <name>          <- optional credit line
+--scripted by Zedja           <- credit line (project decision for every new script)
 local s,id=GetID()
 function s.initial_effect(c)
 ```
@@ -42,8 +42,9 @@ function s.initial_effect(c)
 * Line 1 when the Japanese name is not known yet: `--JP name` (the placeholder used by the
   current pre-release scripts). `MODERNIZING.md` allows an empty `--` as well.
 * Line 2 must equal the database `name` (the linter checks it).
-* Credit line: `--scripted by X` or `--Scripted by X` (both appear); keep one form per
-  author.
+* Credit line: every script written for this project uses `--scripted by Zedja`
+  (upstream scripts use `--scripted by X` or `--Scripted by X`). The linter checks it for
+  `ZedjaCustomCards/` (S072).
 
 ## 3. Structure of `initial_effect`
 

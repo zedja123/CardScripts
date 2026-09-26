@@ -33,12 +33,14 @@ host is blocked; `lint.py` still works with its static index.
 1. **Intake.** Identify each card: `python3 $T/cdb.py show <passcode|name>`. Classify:
    A = in the database (script missing or to fix), B = official but not in the database,
    C = custom. For B/C collect name, types, attribute, race, level/rank/link (+markers),
-   scales, ATK/DEF, archetypes, exact text. Ask the user only for what cannot be derived,
-   and for the first-time decisions listed in the docs README (credit line, custom folder,
-   custom database, passcode block). Reuse answers already given.
-2. **Card data.** Record stats and strings (`aux.Stringid(id,n)` = `str(n+1)`). For B/C
-   write a JSON spec and run `cdb.py new spec.json` (dry run), then `--db <agreed file>
-   --write` only with the user's agreement on the file.
+   scales, ATK/DEF, archetypes, exact text. Ask the user only for what cannot be derived
+   (and to confirm the archetype number of a new custom archetype); apply the project
+   decisions below without asking again.
+2. **Card data.** Record stats and strings (`aux.Stringid(id,n)` = `str(n+1)`). For C take
+   the passcode from `cdb.py nextid <archetype>` (`--token` for Tokens), write a JSON spec,
+   run `cdb.py new spec.json` (dry run) and then `--write` (defaults to
+   `ZedjaCustomCards/ZedjaCustomCards.cdb` for 27xxxxxxx passcodes). For B ask which database
+   file to use.
 3. **Effect table.** Parse the text with `docs/02-psct-to-lua.md`.
    One row per effect: verbatim text without the final period, kind + `SetType`, event/code,
    range, condition, count limit, cost, target, resolution (with connectives), categories.
@@ -62,9 +64,22 @@ host is blocked; `lint.py` still works with its static index.
    ```
    Then re-read the script against the effect table and the checklist in chapter 08 §4.
 7. **Deliver.** Commit on the working branch (upstream-style message, e.g.
-   `Add "Card Name"`), push, open/update the PR if working through GitHub. Report: effect
+   `Add "Card Name"`), push, open/update the PR (one PR per batch; per card only for
+   follow-up review work). Report: effect
    table, decisions/assumptions, lint + load-test results, the test board, scenarios to run
    in the client, open questions.
+
+## Project decisions (user, 2026-09-26)
+
+* Credit line: `--scripted by Zedja` as line 3 of every new script.
+* Custom cards: folder `ZedjaCustomCards/` (flat), database
+  `ZedjaCustomCards/ZedjaCustomCards.cdb`, scope Custom (`ot` 0x20).
+* Custom passcodes: `270000000 + 100*(archetype-1) + n` (archetype 1 = 270000000-270000099);
+  Tokens from the end of the block. Use `cdb.py nextid`.
+* Custom archetype setcodes: **default only, not confirmed by the user**: `0xE00 + archetype
+  number`, declared as a file-local `local SET_NAME=0xe01`; mention it in the report.
+* Pull requests: one per batch; if a card needs code review afterwards, one per card.
+* Fixes: modernise only the touched lines.
 
 ## Mapping rules that are easy to get wrong
 

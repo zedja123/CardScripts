@@ -16,3 +16,7 @@ python3 $T/loadcheck.py run <script>        # load test in the real core (run `s
 
 Repository rules: tabs, LF, UTF-8; one script per card named `c<passcode>.lua`; see
 `MODERNIZING.md` and `CONTRIBUTING.md`.
+
+Project decisions: credit `--scripted by Zedja`; custom cards in `ZedjaCustomCards/` with
+`ZedjaCustomCards/ZedjaCustomCards.cdb`; passcodes `270000000 + 100*(archetype-1) + n`
+(`cdb.py nextid`); one pull request per batch. Keep every folder one level deep (CI checker).
