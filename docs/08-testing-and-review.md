@@ -111,7 +111,8 @@ installed first (`expansions/` or a configured repository).
 - [ ] `chk==0` checks everything the resolution needs (cards exist, zones, can draw, ...).
 - [ ] Categories and `SetOperationInfo` / `SetPossibleOperationInfo` describe the effect.
 - [ ] Resolution re-checks relations (`IsRelateToEffect`) and face-up status where needed.
-- [ ] Connectives follow 02 §6 (Part 7): "then" = success check + `BreakEffect`; "and if you do" = success check, no break; "also" = independent; plain "and" = check both parts are possible before doing either.
+- [ ] Connectives follow 02 §6 (Part 7): "then" = success check + `BreakEffect`; "and if you do" = success check, no break; "also" = independent; plain "and" = check both parts are possible before doing either; "then you can A, and if you do, B" = offer A only while B is possible.
+- [ ] A mandatory "When this card is activated: Add ..." requires a card to add in `chk==0`; "This card is also X-Attribute" uses `SetRange(LOCATION_MZONE)` (02 §8).
 - [ ] Target references follow 02 §10: "that target"/"targeted" re-checks the target filter; "it"/"they" only `IsRelateToEffect`; "both" requires every target.
 - [ ] Activation conditions (before the colon) are not repeated in the operation unless the text states a resolution requirement (02 §2).
 - [ ] Summon wording follows 02 §11 ("must first" vs "cannot be Special Summoned by other ways"); "Cannot be Normal Summoned/Set" has `TYPE_SPSUMMON` in the database.

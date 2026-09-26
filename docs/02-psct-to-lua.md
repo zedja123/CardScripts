@@ -186,6 +186,18 @@ sequential. Leave it out and the events are raised together.
   are simultaneous. Do the sending inside the `EFFECT_SPSUMMON_PROC` operation
   (`REASON_COST`), so no separate event comes first; the sent card's "When" effects do not
   miss the timing.
+* **"then you can A, and if you do, B"**: offer A only while B can also be done. Check both
+  before `Duel.SelectYesNo`; otherwise the player can pay A (discard, banish, destroy) and
+  get nothing. Official scripts do this: "Gagaga Escape" checks the discard, the free zone
+  and a monster in the Deck; "Destiny HERO - Dreadnought Servant" checks a card to destroy
+  and a "Polymerization" in the Deck; "Drytron Delta Altais" checks a card to reveal and
+  that you can draw. When B cannot fail (a lingering effect, as in "Lunalight
+  Masquerade"), checking A is enough.
+
+Other resolution wording:
+
+| Wording | Meaning | Script |
+|---|---|---|
 | "**Activate** 1 of these effects;" + bullets | Choice made **on activation** | `Duel.SelectEffect` in `SetTarget`; store the choice (`e:SetLabel(op)` or `e:GetChainData().choice`); set the category per choice |
 | "**Apply** 1 of these effects" / "choose 1" in the resolution | Choice made **on resolution** | `Duel.SelectEffect` in `SetOperation` |
 | "... **except** "X"" | Exclusion in the filter | `not c:IsCode(<X>)`; when X is this card, `not c:IsCode(id)` and add `id` to `s.listed_names` |
@@ -251,6 +263,9 @@ If paying the cost frees a Monster Zone that the effect then uses, check zones w
 | "toss a coin" / "roll a die" | `CATEGORY_COIN` / `CATEGORY_DICE`, `s.toss_coin=true` / `s.roll_dice=true` |
 | "you control" / "your opponent controls" / "on the field" | `(tp,LOCATION_X,0)` / `(tp,0,LOCATION_X)` / `(tp,LOCATION_X,LOCATION_X)` in `Duel.*Matching*` calls |
 | "face-up" | `c:IsFaceup()` or `aux.FaceupFilter(f,...)`; always check it for monsters "you control" whose properties are inspected |
+| "When this card is activated: Add ..." (Spell/Trap, no "You can") | Mandatory part of the activation: the target function's `chk==0` requires a card to add, so the card cannot be activated without one (all 14 official scripts with this wording, e.g. "R.B. Funk Dock", "Gateway to Chaos") |
+| "When this card is activated: You can add ..." | Optional: `chk==0` returns `true`; in the operation check the card is still related, offer the search with `SelectYesNo`, and track "once per turn" with a flag effect set only when the search is used |
+| "This card is also X-Attribute." | `EFFECT_ADD_ATTRIBUTE` + `EFFECT_FLAG_SINGLE_RANGE` with `SetRange(LOCATION_MZONE)`: the extra Attribute applies on the field only (all 10 official scripts with this wording, e.g. "Simorgh, Bird of Perfection", "Light and Darkness Dragon") |
 | "(This card is always treated as a "X" card.)" | Database `setcode` only; no script |
 | "This card's name becomes "X" while ..." | `EFFECT_CHANGE_CODE` + `EFFECT_FLAG_SINGLE_RANGE` |
 | "Cannot be Normal Summoned/Set." / "Must (first) be Special Summoned ..." | See §11: the exact wording decides between `EnableReviveLimit`, `AddMustBeSpecialSummoned` and `EFFECT_SPSUMMON_CONDITION`, and the database type needs `TYPE_SPSUMMON` |
